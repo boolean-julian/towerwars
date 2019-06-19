@@ -1,0 +1,19 @@
+package towerwars.Spieler;
+import java.util.Random;
+	//ToDo: getPossibleMoves() fehlt beim ExtendedBoard
+public class RandomKISpieler extends Spieler {
+	Random random;
+	RandomKISpieler(){
+		super();
+		random = new Random();
+	}
+	/**	Ermittelt einen nächsten zufälligen Move
+	@return nächster Move
+	*/
+	@Override
+	private Move getNextMove(){
+		List<Move> possibleMoves = board.getLegalMoves(); 	
+		return possibleMoves.get(random.nextInt(possibleMoves.size()));
+	}
+
+}

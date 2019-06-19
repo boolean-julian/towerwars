@@ -1,0 +1,270 @@
+package towerwarspp.gfx;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import towerwarspp.preset.*;
+import towerwarspp.board.*;
+import java.util.LinkedList;
+
+/**
+ *	Klasse zur Darstellung des Spielbretts<br><br>
+ *
+ *	Konstruktion:<br>
+ *	{@code TowerWarsGUI gui = new TowerWarsGUI(new BasicBoard(15));}<br>
+ *	ruft den Konstruktor auf. Wenn man als zweiten Parameter des Konstruktors noch einen Integer hinzuf&uuml;gt,
+ *	so kann man die Gr&ouml;sse der einzelnen Spielfelder modifizieren.<br><br>
+ *
+ *	Nutzung:<br>
+ *	Um das erzeugte GUI anzeigen zu lassen, muss
+ *	{@code gui.createAndShowGUI()} aufgerufen werden. Nach jedem vollbrachten Zug, der angezeigt werden soll,
+ *	muss ein Aufruf von {@code gui.update()} erfolgen, um die Anzeige zu aktualisieren.<br><br>
+ *
+ *	@author Julian L&uuml;ken
+ */
+public class TowerWarsGUI implements Viewer, Requestable {
+	/** darzustellendes Board */
+	private BasicBoard board;
+	/** Raster aus HexagonButtons bildet das Spielfeld */
+	private HexagonButton[][] buttons;
+	
+
+	/** Startposition, die von der deliver() Methode gespeichert wird, damit der Spieler einen Move produzieren kann */
+	private Position start;
+	/** Endposition, die von der deliver() Methode gespeichert wird, damit der Spieler einen Move produzieren kann */
+	private Position end;
+	/** Hier speichert deliver(), ob das erste oder zweite mal geklickt wurde, damit der Spieler einen Move produzieren kann */
+	private boolean first;
+
+	/** Fenster */
+	private JFrame frame;
+	/** Panel f&uuml;r das Spielfeld */
+	private JPanel panel;
+
+	/** Konstruktor, der das Spielbrett entegegennimmt. Setzt die Gr&ouml;&szlig;e der Hexagons auf 30px
+	 *	@param board anzuzeigendes Spielbrett
+	 */
+	public TowerWarsGUI(BasicBoard board) {
+		this.board = board;
+		this.first = true;
+	}
+	/** Konstruktor, der das Spielbrett und die Gr&ouml;&szlig;e der Hexagons entgegennimmt
+	 *	@param board Spielbrett
+	 *	@param hexaSize Gr&ouml;&szlig;e
+	 */
+	public TowerWarsGUI(BasicBoard board, int hexaSize) {
+		this.board = board;
+		this.first = true;
+	}
+	
+
+	/** Getter f&uuml;r das Spielbrett, auf dem das GUI l&auml;ft
+	 *	@return Spielbrett
+	 */
+	public BasicBoard getBoard()			{return board;}
+
+	/** Getter f&uuml;r das Array aus HexagonButtons auf dem Spielbrett
+	 *	@return Spielfelder
+	 */
+	public HexagonButton[][] getButtons() 	{return buttons;}
+
+	/** Methode, die die Startposition f&uuml;r deliver() speichert
+	 *	@param start Startposition
+	 */
+	public void setStart(Position start)	{this.start = start;}
+
+	/** Methode, die die Endposition f&uuml;r deliver() speichert
+	 *	@param end Endposition
+	 */
+	public void setEnd	(Position end) 		{this.end = end;}
+
+	/** Hilfsmethode f&uuml;r den ActionListener der HexagonButtons. Unterscheidet ersten vom zweiten Mausklick auf dem Spielbrett
+	 *	@param first true, falls erster Mausklick, false, falls zweiter
+	 */
+	public void setFirst(boolean first)		{this.first = first;}
+	
+
+	/** Methode, die das Fenster initialisiert und das Spielfeld darstellt */
+	public void createAndShowGUI() {
+		frame = new JFrame("Testklasse fuer TowerWarsGUI");
+		panel = new JPanel();
+		panel.setLayout(null);
+
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.add(panel);
+		frame.setSize(900,600);
+		
+		frame.setVisible(true);
+
+		update();
+		
+		// Listener fuer resize
+		frame.addComponentListener(new ComponentAdapter() {
+			public void componentResized(ComponentEvent componentEvent) {
+				updateSize();
+			}
+		});
+	}
+	
+
+	private int minSize, hexaSize;
+	private boolean isWidth;
+	/** Hilfsmethode f&uuml;r update() und updateSize(). Bestimmt die Gr&ouml;&szlig;e der anzuzeigenden Elemente */
+	private void updateSpacing() {
+		minSize = frame.getHeight();
+		isWidth = false;
+		// Seitenverhaeltnis des Spielbretts ist 3:2
+		if (2*frame.getWidth() < 3*frame.getHeight()) {
+			minSize = frame.getWidth();
+			isWidth = true;
+		}
+		if (isWidth) {
+			hexaSize = (int)(minSize/(3*board.getSize()));
+		}
+		else {
+			hexaSize = (int)(minSize/(2*board.getSize()));
+		}
+	}
+
+	/** Methode, die das JPanel, in dem das Spielfeld liegt, anhand des zugrunde liegenden Spielbrett-Objekts aktualisiert und anzeigt,
+	 *	falls createAndShowGUI() vorher aufgerufen wurde
+	 */
+	public void update() {
+		updateSpacing();
+		
+		panel.removeAll();
+
+		Token[][] tokens = board.getTokens();
+		buttons = new HexagonButton[board.getSize()][board.getSize()];
+		
+		for (int i = 0; i < getSize(); i++) {
+			for (int j = 0; j < getSize(); j++) {
+				buttons[i][j] = new HexagonButton(new Hexagon(hexaSize),tokens[i][j],this);
+				buttons[i][j].setBounds(j*2*hexaSize+i*hexaSize, i*2*hexaSize-i*hexaSize/4, 2*hexaSize, 2*hexaSize);
+				panel.add(buttons[i][j]);
+			}
+		}
+		frame.add(panel);
+
+		frame.revalidate();
+		panel.repaint();
+	}
+
+	/** Methode, die das JPanel, in dem das Spielfeld liegt, vergroessert oder verkleinert
+	 *	falls createAndShowGUI() vorher aufgerufen wurde
+	 */
+	public void updateSize() {
+		updateSpacing();
+
+		for (int i = 0; i < getSize(); i++) {
+			for (int j = 0; j < getSize(); j++) {
+				buttons[i][j].getHexagon().setRadius(hexaSize);
+				buttons[i][j].getHexagon().setCenter(new Point(hexaSize,hexaSize));
+				buttons[i][j].setBounds(j*2*hexaSize+i*hexaSize, i*2*hexaSize-i*hexaSize/4, 2*hexaSize, 2*hexaSize);
+			}
+		}
+		panel.repaint();
+	}
+
+
+	/** Liefert den Status des Spiels zur&uuml;ck. &Uuml;berschreibt Methode aus der Schnittstelle towerwarspp.preset.Viewer
+	 *	@return 	OK, falls das Spiel weiterl&auml;ft<br>
+	 *				BLUE_WIN, falls der blaue Spieler das Spiel gewonnen hat<br>
+	 *				RED_WIN, falls der rote Spieler das Spiel gewonnen hat<br>
+	 *				ILLEGAL, falls eine von den Spielregeln verbotene Aktion durchgef&uuml;hrt wurde
+	 */
+	@Override
+	public Status getStatus() {return board.getStatus();}
+
+	/** Liefert die Runde, in dem sich das Spiel befindet, als ganze Zahl. &Uuml;berschreibt Methode aus der Schnittstelle towerwarspp.preset.Viewer
+	 *	@return Runde
+	 */
+	@Override
+	public int getTurn() {return board.getTurn();}
+
+	/** Liefert die Spielfeldgr&ouml;&szlig;e. &Uuml;berschreibt Methode aus der Schnittstelle towerwarspp.preset.Viewer
+	 *	@return Spielfeldgr&ouml;&szlig;e
+	 */
+	@Override
+	public int getSize() {return board.getSize();}
+
+	/** F&uuml;gt mithilfe der Hilfsmethode addButtonListeners den HexagonalButtons auf dem Spielfeld ActionListener hinzu,
+	 *	die diese Methode wiederum mithilfe von notify() benachrichtigen, wenn ein menschlicher Spieler einen Zug t&auml;tigt.
+	 *	@return menschlicher Zug
+	 */
+	@Override
+	public synchronized Move deliver() {
+		if (getStatus() == Status.OK) {
+			addButtonListeners();
+			try {
+				while (start == null || end == null) {
+					wait();
+				}
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			Move move = new Move(start,end);
+			setStart(null);
+			setEnd(null);
+			if (board.isLegal(move)) {
+				board.executeMove(move);
+				update();
+				return move;
+			}
+			else {
+				for (int i = 0; i < getSize(); i++) {
+					for (int j = 0; j < getSize(); j++) {
+						buttons[i][j].deSelect();
+					}
+				}
+				System.out.println("Illegaler Zug! Bitte nochmal neu eingeben");
+				return deliver();
+			}
+		}
+		return null;
+	}
+
+	/** Hilfsmethode f&uuml;r deliver(). F&uuml;gt dem Spielfeld ActionListener hinzu, um Klicks auf die HexagonButtons auszuwerten */
+	private void addButtonListeners() {
+		for (int i = 0; i < board.getSize(); i++) {
+			for (int j = 0; j < board.getSize(); j++) {
+
+				// erst alte listener entfernen
+				for (ActionListener a : buttons[i][j].getActionListeners() ) {
+					buttons[i][j].removeActionListener(a);
+				}
+				// dann neue listener drauf
+				buttons[i][j].addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
+						System.out.println(e.getActionCommand());
+						for (int i = 0; i < getSize(); i++) {
+							for (int j = 0; j < getSize(); j++) {
+								if (e.getSource() == buttons[i][j]) {
+									synchronized(buttons[i][j].getGUI()) {
+										// erster klick
+										if (first && buttons[i][j].getToken() != null && buttons[i][j].getToken().getColor() == board.getCurrentPlayer()) {
+											Position start = new Position(i+1,j+1);
+											setStart(start);
+											for (Position position : board.getNeighborhood(start, buttons[i][j].getToken().getRange())) {
+												buttons[position.getLetter()-1][position.getNumber()-1].select();
+											}
+											buttons[i][j].select();
+											setFirst(false);
+										}
+										// zweiter klick
+										else if (!first) {
+											Position end = new Position(i+1,j+1);
+											setEnd(end);
+											buttons[i][j].getGUI().notify();
+											setFirst(true);
+										}
+									}
+								}
+							}
+						}
+					}	
+				});
+			}
+		}
+	}
+}

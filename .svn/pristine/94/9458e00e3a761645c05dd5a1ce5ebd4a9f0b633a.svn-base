@@ -1,0 +1,271 @@
+package towerwarspp.io;
+import towerwarspp.preset.*;
+import towerwarspp.board.*;
+import towerwarspp.gfx.TowerWarsGUI;
+import java.util.Scanner;
+
+public class EinAusgabe implements Viewer, Requestable, RequestableOut {
+	
+	private BasicBoard board;
+	private Scanner input;
+	private TowerWarsGUI gui;
+	private boolean guiInput;
+
+	//Farbenformatierung
+	private static final String REDCOLOR  = (char)27 + "[31m";
+	private static final String AXISCOLOR = (char)27 + "[32m";
+	private static final String SHRPCOLOR = (char)27 + "[33m";
+	private static final String BLUECOLOR = (char)27 + "[34m";
+	private static final String CLRFORMAT = (char)27 + "[0m";
+
+	/**
+	Constructor
+	@param board ist das zu erzeugende Spielbrett
+	@param input ist die eingegebene Eingabe, hier in der Main
+	aufgrund usability in der main-class
+	*/
+	public EinAusgabe(BasicBoard board, Scanner input) {
+		this.board = board;
+		this.input = input;
+		gui = new TowerWarsGUI(board);
+		guiInput = false;
+	}
+
+	/**
+	gibt groessse des boards zurueck
+	@return groesse des baords
+	*/
+	@Override
+	public int getSize() {
+		return board.getSize();
+	}
+	
+	/**
+	Erfragung des derzeitigen Spielzugs
+	@return der derzeitige Spielzug
+	*/
+	@Override
+	public int getTurn() {
+		return board.getTurn();
+	}
+	
+	/**
+	Erfragung des derzeitigen Status des Spielbretts
+	@return der Status des Spielbretter
+	*/
+	@Override
+	public Status getStatus() {
+		return board.getStatus();
+	}
+
+	/**
+	 * Getter fuer gui
+	 * @return Gui dieses Objektes
+	 */
+	public TowerWarsGUI getGui() {
+		return gui;
+	}
+
+	/**
+	 * Getter fuer guiInput
+	 * @return true, wenn deliver Zuege auf der Gui annimmt, false wenn auf der Kommandozeile
+	 */
+	public boolean isGuiInput() {
+		return guiInput;
+	}
+
+	/**
+	 * Setter fuer guiInput
+	 * @param guiInput Neuer Wert fuer guiInput
+	 */
+	public void setGuiInput(boolean guiInput) {
+		this.guiInput = guiInput;
+	}
+	
+	/**
+	 * Diese Methode dient zur Erstausgabe des Spielbrettes als Grafik
+	 */
+	public void showGUI() {
+		gui.createAndShowGUI();
+	}
+
+	/**
+	 * Diese Methode dient zum Updaten der Grafik
+	 */
+	public void updateGUI() {
+		gui.update();
+	}
+
+	/**
+	Das Spielbrett wird als String ausgegeben. Spalten sind mit Zahlen von 1 bis n gekennzeichnet
+	und Zeilen mit buchstaben von A bis nten-Buchstaben. 
+	Spielstein-Legende:		0(white)			--- leeres Feld
+							0(farbig)			--- Bauer
+							rote Symbole		--- rote Spielsteine
+							blaue Symbole		--- blaue Spielsteine
+							Nummer (!= 0)		--- Turm
+							Nummber*			--- geblockter Turm
+							x					--- Basis
+	@return String derzeitige Spiellbrett situation als Textausgabe
+	*/
+	@Override
+	public String toString() {
+	
+		//Einrückung für die Rautenform
+		String tabulator = "  ";
+		
+		//Spielbretsituation, die spaeter in String eingefuegt wird
+		String string = "";
+		
+		//Spielsteine mit ihrer Position anfordern
+		Token[][] tokens = board.getTokens();
+		
+		// Obere Achse zeichnen
+		string = drawColumns(string);
+		
+		// Rumpf
+		
+		//Iteriertion der Spalten des Spielfelds
+		for (int i = 0; i < getSize(); i++) {
+		
+//-----------------> die seitlichen Achsen sollten per Hilsmethode erzeugt werden #CodeDoppelung		
+			// Linke Achse
+			string += AXISCOLOR + (char)('A'+i) + CLRFORMAT + " \\ ";
+			
+			//Iteration der Zeilen des Spielfelds
+			for (int j = 0; j < getSize(); j++) {
+				
+				// Besetztes Feld
+				if (tokens[i][j] != null) {
+
+					//Darstellung der Farbe der Spieler
+					boolean opponentIsRed = false;
+					
+//-----------------> Optimal programmiert ?=> opponentIsRed
+
+					//Einfaerbung der Spielstene anhand der Spielerfarben
+					if (tokens[i][j].getColor() == PlayerColor.BLUE) {
+						string += BLUECOLOR;
+						opponentIsRed = true;
+					}
+					else {
+						string += REDCOLOR;
+					}
+					
+					//TokenTypes werden Abgefragt
+					//Bauer ist gefaerbte 0
+					if (tokens[i][j] instanceof Pawn) {
+						string += "O"+ CLRFORMAT +" \\ ";
+					}
+					//Bases wird als gefaerbtes X dargestellt
+					else if (tokens[i][j] instanceof Base) {
+						string += "X"+ CLRFORMAT +" \\ ";
+					}
+					
+					//Tower werden gefaerbt mit ihrer Hoehe dargestell
+					else if (tokens[i][j] instanceof Tower) {
+						Tower tower = (Tower) tokens[i][j];
+						
+						//falls ein Tower vom Gegner geblockt wird ein * zugefuegt, in der farbe des
+						//Gegners
+						if (tower.isBlocked()) {
+							string += tower.getHeight();
+							if (opponentIsRed) {
+								string += REDCOLOR;
+							}
+							else {
+								string += BLUECOLOR;
+							}
+							string += "*"+ CLRFORMAT +"\\ ";
+						}
+						else {
+							string += tower.getHeight()+ CLRFORMAT +" \\ ";
+						}
+					}
+				}
+				
+				// Leeres Feld bzw. nicht besetzte Felder werden mit einer weißen 0 gekennzeichnet
+				else {
+					string += "O \\ ";
+				}
+				string += CLRFORMAT;
+			}
+			// Einrueckung des Spielfelds
+			tabulator += "  ";
+
+			// Rechte Achse
+			string += AXISCOLOR + (char)('A'+i) + "\n" + tabulator + CLRFORMAT;
+		}
+		
+		// Untere Achse
+		string = drawColumns(string);
+		
+		//fertigen String ausgeben
+		return string;
+	}
+	
+	/**
+	Scannt die Einagbe ein von der bash ein, prueft diese auf Fortmat- und
+	Regelkorrektheit. faengt ungueltige Einagbe oder Zuege ab und bearbeitet diese.
+	@return ist der zuzeichnende Spielzug, der eingegeben wurde
+	*/
+	@Override
+	public Move deliver() {
+		Move nextMove = null;
+		boolean ready = false;
+		// Wiederholen bis gueltiger Move eingegeben wurde
+		while(ready == false) {
+			if(guiInput) {
+				// Eingabe per Gui
+				nextMove = gui.deliver();
+				ready = true;
+			} else {
+				// Eingabe per Scanner
+				String str = input.nextLine();
+				try {
+					nextMove = Move.parseMove(str);
+					ready = true;
+				} catch(MoveFormatException exception) {
+					System.err.println("Die Eingabe hat ein falsches Format");
+				} catch(IllegalArgumentException exception) {
+					System.err.println("Die Eingabe ist ungueltig");
+				}
+			}
+			// Pruefung auf Legalitaet
+			if(!board.isLegal(nextMove)) {
+				ready = false;
+			}
+		}
+		return nextMove;
+	}
+	
+	/**
+	Hilfmethode zur Zeichnung der Spaltendarstellung
+	@param string ist der bislang umgewandlte String, der nachher auf der bash ausgegeben wird
+	und die Spielsituation darstellen wird
+	*/
+	private String drawColumns(String string){
+		string += SHRPCOLOR + "#" + CLRFORMAT + " \\";
+		
+		//Iteriert die Spalten
+		for (int i = 0; i < getSize(); i++) {
+			//Ausgleich für die einstelligen Ziffern, die 1 StringSpace weniger haben
+			if (i < 9) {
+				string += " ";
+			}
+			//Achsenfaerbung 
+			string += AXISCOLOR + (int)(i+1) + CLRFORMAT + " \\";
+		}
+		string += SHRPCOLOR + " #\n  " + CLRFORMAT;
+		return string;
+	}
+	
+	/**
+	noch in Bearbeitung
+	*/
+	@Override
+	public Move deliverOut() {
+		return null;
+	}
+	
+}

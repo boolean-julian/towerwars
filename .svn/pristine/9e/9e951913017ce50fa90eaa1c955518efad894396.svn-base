@@ -1,0 +1,435 @@
+package towerwarspp.board;
+import java.util.*;
+import towerwarspp.preset.*;
+
+/**
+ * Diese Klasse bildet die grundlegene Implementation des Spielfeldes von Towerwars. Ein neues Spielfeld wird mit einer
+ * Groesse zwischen 4 und 26 und der Startverteilung der Spielsteine initialisiert. Auf seine Attribute kann mit Gettern
+ * zugegriffen werden und es stellt eine Methode bereit um zu pruefen ob ein Move legal ist und eine Methode, um einen
+ * Move auf dem Spielfeld auszufuehren.
+ * Die Schnittstelle Viewable wird implementiert um Ausgabe des Spielfeldes zu ermoeglichen
+ * @author Marcel Hellwig
+ */
+public class BasicBoard implements Viewable{
+	// Instanzvariablen
+    /**
+     * size = Die Groesse (Anzahl der Felder pro Kante) des Spielfeldes
+     */
+	private int size;
+    /**
+     * roster = Das Raster der Zellen des Spielfeldes
+     */
+	private Token[][] tokens;
+    /**
+     * currentPlayer = Farbe des Spielers, der als naechstes an der Reihe ist
+     */
+	private PlayerColor currentPlayer;
+    /**
+     * status = Aktueller Status des Spielfeldes
+     */
+	private Status status;
+    /**
+     * savedMoves = Liste der letzten gespeicherten Zuege
+     */
+    private LinkedList<SavedMove> savedMoves;
+	/**
+	 * turn = Nummer der aktuellen Runde
+	 */
+	private int turn;
+
+	// Konstruktoren
+    /**
+     * Konstruktor mit uebergebener Spielfeldgroesse, der das Spielfeld mit Startaufstellung initialisiert
+     * @param size = Spielfeldgroesse
+     */
+	public BasicBoard(int size) {
+	
+		//default Attribute
+		currentPlayer = PlayerColor.RED;
+		status = Status.OK;
+		savedMoves = new LinkedList<SavedMove>();
+		
+		//check auf legale Groesse des Spielbretts
+        if (size < 4 || size > 26) {
+			throw new IllegalArgumentException("Spielfeldgroesse (" + size + ") muss zwischen 4 und 26 liegen");
+		}
+		
+		//Spiellbrettgroesse setzen
+		this.size = size;
+		tokens = new Token[size][size];
+		
+		//Iteration der Spielbrettfelder
+		for (int i = 0; i < size; i++) {
+			for (int j = 0; j < size; j++) {
+				
+				//Board-Positionen
+				int letter = i + 1;
+				int number = j + 1;
+                Token t = null;
+				
+				//Pawn-Initialisierung fuer Rot
+				if(letter + number <= 2 + size / 2 && letter + number > 2) {
+					t = new Pawn(new Position(letter, number), PlayerColor.RED, this);
+				}
+				//Pawn-Initialisierung fuer Blue
+				if(letter + number >= 2*size - size / 2 && letter + number < 2 * size) {
+					t = new Pawn(new Position(letter, number), PlayerColor.BLUE, this);
+				}
+				//Base fuer Rot
+                if(letter + number == 2) {
+                    t = new Base(new Position(letter, number), PlayerColor.RED, this);
+                }
+                //Base fuer Blau
+                if(letter + number == 2 * size) {
+                    t = new Base(new Position(letter, number), PlayerColor.BLUE, this);
+                }
+                tokens[i][j] = t;
+			}
+		}
+	}
+
+	// Setter/Getter
+    /**
+     * Getter fuer size
+     * @return Groesse dieses Spielfeldes
+     */
+	public int getSize() {return size;}
+    /**
+     * Getter fuer tokens
+     * @return Tokenraster dieses Spielfeldes
+     */
+	public Token[][] getTokens() {return tokens;}
+    /**
+     * Getter fuer currentPlayer
+     * @return Farbe des Spielers, der aktuell am Zug ist
+     */
+	public PlayerColor getCurrentPlayer() {return currentPlayer;}
+    /**
+     * Getter fuer status
+     * @return Aktueller Status des Spielfelds
+     */
+	public Status getStatus() {return status;}
+    /**
+     * Getter fuer savedMoves
+     * @return Gespeicherte Zuege dieses Spiels
+     */
+    public LinkedList<SavedMove> getSavedMoves() {return savedMoves;}
+	/**
+	 * Getter fuer turn
+	 * @return bisherige Rundenanzahl dieses Spiels
+	 */
+	public int getTurn() {return turn;}
+
+	// Methoden
+    /**
+     * Diese Methode dient dazu in executeMove den ausgefuehrten Zug zu speichern
+     * @param move = ausgefuehrter Zug
+     */
+    private void updateSavedMoves(Move move) {
+    
+        SavedMove last = new SavedMove(move, this);
+        savedMoves.add(last);
+        
+        //speichert nur die letzen 3 Moves
+        if(savedMoves.size() > 3) {
+            savedMoves.removeFirst();
+        }
+    }
+
+    /**
+     * Diese Methode dient dazu am Ende von executeMove den Status des Spielfeldes zu setzen
+     * @param status = neuer Status
+     */
+    private void updateState(Status status) {
+        this.status = status;
+        if(status == Status.ILLEGAL) {
+            return;
+        }
+        //Wenn der jetzige Player rot ist => setze auf blau bei true, ansosnten auf rot
+        currentPlayer = (currentPlayer == PlayerColor.RED) ? PlayerColor.BLUE : PlayerColor.RED;
+    }
+
+    /**
+     * Diese Methode gibt das Token zurueck, die sich im Raster an der uebergebenen Position befindet.
+     * Wenn die Position nicht innerhalb des Spielfeldes liegt wird eine *************** Exception geworfen
+     * @param position = Position, deren Zelle ermittelt werden soll
+     * @return Token, das sich an der uebergebenen Position befindet
+     */
+    public Token findToken(Position position) throws IllegalArgumentException {
+    	//Token ausserhalb des Spielfelds
+        if(position.getLetter() > size || position.getNumber() > size) {
+            throw new IllegalArgumentException(position + "ist nicht im Spielfeld enthalten, hat also kein zugeordnetes Token");
+        }
+        //ArrayIndex startet bei 0
+        return tokens[position.getLetter() - 1][ position.getNumber() - 1];
+    }
+
+    /**
+     * Die Methode prueft den Abstand von zwei Positionen, wobei der Abstand die minimale Anzahl der
+     * Schritte zu Nachbarfeldern ist, die benoetigt wird um von Position a zu Position b zu kommen
+     * @param a = Erste Position
+     * @param b = Zweite Position
+     * @return Abstand der beiden Positionen
+     */
+    public int getDistance(Position a, Position b) {
+        return (Math.abs(a.getLetter() - b.getLetter()) + Math.abs(a.getLetter() + a.getNumber() - b.getLetter() - b.getNumber()) + Math.abs(a.getNumber() - b.getNumber())) / 2;
+    }
+
+    /**
+     * Diese Methode testet ob der uebergebene Zug auf dem Brett aktuell legal ist oder nicht
+     * @param move = Zug, der auf Legalitaet geprueft werden soll
+     * @return true, wenn der Zug legal ist, false sonst
+     */
+    public boolean isLegal(Move move) {
+        if(move == null) {
+			// Aufgabe ist erlaubt
+            return true;
+        }
+        Position start = move.getStart(), end = move.getEnd();
+
+       
+/*Wird in der Eingabe schon durch ein try & catch abgefangen
+//
+        // Start- und Endposition muessen im Feld liegen
+        if(start.getNumber() < 1 || start.getNumber() > size ||
+           start.getLetter() < 1 || start.getLetter() > size ||
+           end.getNumber() < 1 || end.getNumber() > size ||
+           end.getLetter() < 1 || end.getLetter() > size) {
+           
+            return false;
+        }
+//
+*/
+  
+        Token act = findToken(start);
+        
+        if(start.equals(end)) {
+			// Zuege koennen nicht auf dem gleichen Feld starten und enden
+            return false;
+        }
+        if(act == null) {
+			// Zuege koennen nicht auf einem leeren Feld starten
+            return false;
+        }
+        if(act.getColor() != currentPlayer) {
+			// Nur der Spieler, der an der Reihe ist darf Zuege ausfuehren
+            return false;
+        }
+        if(act.getType() == TokenType.BASE) {
+			// Die Basis kann nicht bewegt werden
+            return false;
+        }
+        if(act.getType() == TokenType.PAWN) {
+			// Das Token ist ein eigener Pawn
+			
+            if(act.getRange() < getDistance(start, end)) {
+				// Der Pawn hat nicht ausreichend Zugreichweite
+                return false;
+            }
+            Token t = findToken(end);
+            if(t == null) {
+				// Ein Pawn kann sich auf leere Felder bewegen
+                return true;
+            }
+            // Zuege auf gegnerische Tokens sind moeglich, ausser Fernzuege auf blockierte Tuerme
+            if(t.getColor() != currentPlayer) {
+                if(t.getType() == TokenType.TOWER && ((Tower)t).isBlocked() && getDistance(start, end) != 1) {
+                    return false;
+                }
+                return true;
+            }
+            if(t.getType() == TokenType.BASE || (t.getType() == TokenType.TOWER && ((!((Tower)t).isBlocked()) && ((Tower)t).getHeight() == size / 3))) {
+				// nur die eigene Basis und nicht blockierte Tuerme maximaler Hoehe blockieren Zuege auf eigene Token
+                return false;
+            }
+            return true;
+        }
+		// Das Token ist ein eigener Tower
+        if(getDistance(start, end) == 1) {
+            Token t = findToken(end);
+            if(t == null) {
+				// Abbau auf leere Felder ist erlaubt
+                return true;
+            }
+            if(t.getColor() != currentPlayer) {
+				// Gegnerische Tokens blockieren den Abbau eines Turms
+                return false;
+            }
+            if(t.getType() == TokenType.BASE || (t.getType() == TokenType.TOWER && ((Tower)t).getHeight() == size / 3)) {
+				// Die eigene Basis und Tuerme maximaler Hoehe blockieren den Abbeu des Turms
+                return false;
+            }
+			// sonst ist Abbau erlaubt
+            return true;
+        }
+		// Die Zuege von Tuermen koennen nur Weite 1 haben
+        return false;
+    }
+
+    /**
+     * Diese Methode fuehrt den uebergebenen Zug aus, sofern dieser legal ist und updated den Status des Spielfeldes
+     * Ein null-Zug wird als Aufgabe gewertet.
+     * @param move = auszufuehrender Zug
+     */
+	public void executeMove(Move move) {
+        // Betrachten der Sonderfaelle m == null und m ist illegal
+		if(!(isLegal(move))) {
+            // Falls der Move nicht legal ist, wird der Status auf illegal gesetzt
+            
+//Was macht updateSavedMoves hier?
+//
+            updateSavedMoves(new Move(new Position(1,1), new Position(1,1)));
+            updateState(Status.ILLEGAL);
+            return;
+        }
+        if(move == null) {
+            // Wenn ein Spieler aufgibt, dann gewinnt der andere
+//updateSavedMoves??
+//
+            updateSavedMoves(new Move(new Position(size, size), new Position(size,size)));
+            
+            if(currentPlayer == PlayerColor.RED) {
+                updateState(Status.BLUE_WIN);
+            } else {
+                updateState(Status.RED_WIN);
+            }
+            return;
+        }
+        
+        Position start = move.getStart(), end = move.getEnd();
+        Token startToken = findToken(start), endToken = findToken(end);
+        updateSavedMoves(move);
+        
+        // Zug eines Pawns
+        if(startToken.getType() == TokenType.PAWN) {
+            
+            // Entfernen des Pawns vom Startfeld
+            tokens[start.getLetter() - 1][start.getNumber() - 1] = null;
+            
+            // Falls das Zielfeld leer ist oder ein gegnerischer Pawn darauf steht Pawn aufs Zielfeld setzen
+            if(endToken == null || (endToken.getType() == TokenType.PAWN && endToken.getColor() != currentPlayer)) {
+                startToken.setPosition(end);
+                tokens[end.getLetter() - 1][end.getNumber() - 1] = startToken;
+                updateState(Status.OK);
+                return;
+            }
+            // Falls auf dem Ziel ein eigener Pawn steht wird ein neuer Turm gebaut
+            if(endToken.getType() == TokenType.PAWN) {
+                Tower t = new Tower(end, currentPlayer, this);
+                tokens[end.getLetter() - 1][end.getNumber() - 1] = t;
+                updateState(Status.OK);
+                return;
+            }
+            // Falls auf dem Zielfeld ein eigener Turm steht
+            if(endToken.getType() == TokenType.TOWER && endToken.getColor() == currentPlayer) {
+                
+                if(((Tower)endToken).isBlocked()) {
+                    // Falls er blockiert ist wird die Blockade aufgehoben
+                    ((Tower)endToken).setBlocked(false);
+                } else {
+                    // Falls er nicht blockiert ist wird seine Hoehe erhoeht
+                    ((Tower)endToken).setHeight(((Tower)endToken).getHeight() + 1);
+                }
+                updateState(Status.OK);
+                return;
+            }
+            // Falls auf dem Zielfeld ein gegnerischer Turm steht
+            if(endToken.getType() == TokenType.TOWER) {
+            
+                // Falls ein Nahzug stattfindet wird der Turm geschlagen, sonst blockiert
+                if(getDistance(start, end) == 1) {
+                    startToken.setPosition(end);
+                    tokens[end.getLetter() - 1][end.getNumber() - 1] = startToken;
+                } else {
+                    ((Tower)endToken).setBlocked(true);
+                }
+                updateState(Status.OK);
+                return;
+            }
+            // Falls auf dem Zielfeld die gegnerische Basis steht wird das Spiel gewonnen
+            if(endToken.getType() == TokenType.BASE) {
+                tokens[end.getLetter() - 1][end.getNumber() - 1] = startToken;
+                startToken.setPosition(end);
+                updateState((currentPlayer == PlayerColor.RED) ? Status.RED_WIN : Status.BLUE_WIN);
+                return;
+            }
+            throw new RuntimeException("Der Zug wurde vom executeMove-Algorithmus nicht erfasst");
+        }
+        // Zug eines Towers, Veringerung der Hoehe des Turms
+        if(((Tower)startToken).getHeight() == 1) {
+        
+        	//Beim der Dekonstruktiond es Towers um 1, wird ein Pawn erstellt
+            Pawn p = new Pawn(start, currentPlayer, this);
+            tokens[start.getLetter() - 1][start.getNumber() - 1] = p;
+            
+        } else {
+//Noch unklar was ((Tower)startToken genau macht und was die Zeile ansich amcht
+//
+            ((Tower)startToken).setHeight(((Tower)startToken).getHeight() - 1);
+        }
+ 
+//
+//Wieso wird hier ein neuer erstellt, anstatt den alten zu verschieben?
+//Oben beim schlagen eines gegenerischen Tokens wird der nciht neu initialisiert
+        // Falls das Zielfeld leer ist wird dort ein Pawn gesetzt
+        if(endToken == null) {
+            Pawn p = new Pawn(end, currentPlayer, this);
+            tokens[end.getLetter() - 1][end.getNumber() - 1] = p;
+            updateState(Status.OK);
+            return;
+        }
+        // Falls auf dem Zielfeld ein eigener Pawn steht, entsteht dort ein Turm
+        if(endToken.getType() == TokenType.PAWN) {
+            Tower t = new Tower(end, currentPlayer, this);
+            tokens[end.getLetter() - 1][end.getNumber() - 1] = t;
+            updateState(Status.OK);
+            return;
+        }
+        // Falls auf dem Zielfeld ein eigener Tower steht
+        if(endToken.getType() == TokenType.TOWER) {
+            // Falls er blockiert ist wird die Blockade aufgehoben, sonst erhoeht
+            if(((Tower)endToken).isBlocked()) {
+                ((Tower)endToken).setBlocked(false);
+            } else {
+                ((Tower)endToken).setHeight((((Tower)endToken).getHeight() + 1));
+            }
+            updateState(Status.OK);
+            return;
+        }
+        throw new RuntimeException("Der Zug wurde vom executeMove-Algorithmus nicht erfasst");
+	}
+
+    /**
+     * Die Methode gibt an, auf diesem Spielfeld noch ein Zug rueckgaengig gemacht werden kann
+     * @return true, wenn noch ein Zug rueckgaengig gemacht werden kann, false sonst
+     */
+    public boolean canUndoMove() {
+        if(savedMoves.isEmpty()) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Diese Methode macht den letzten ausgefuehrten Zug rueckgaengig, sofern noch ein Zug gespeichert ist, sonst
+     * wird eine IllegalStateException geworfen. Zuege die zur Folge haben, dass ein Spieler das Spiel gewinnt
+     * koennen nicht rueckgaengig gemacht werden
+     */
+    public void undoMove() {
+        if(savedMoves.isEmpty()) {
+            throw new IllegalStateException("Es kann kein weiterer Zug rueckgaengig gemacht werden");
+        }
+        SavedMove last = savedMoves.getLast();
+        savedMoves.removeLast();
+        Position start = last.getStart(), end = last.getEnd();
+        this.status = last.getStatus();
+        tokens[start.getLetter() - 1][start.getNumber() - 1] = last.getStartToken();
+        tokens[end.getLetter() - 1][end.getNumber() - 1] = last.getEndToken();
+    }
+    /**
+     * Diese Methode gibt einen Viewer zurueck, der alle eigenschaften dieses Brettes lesen kann
+     */
+    public Viewer viewer() {
+        return null;
+    }
+}

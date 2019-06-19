@@ -1,0 +1,33 @@
+Cell.java wurde entfernt, entsprechende Referenzen werden in den anderen Klassen gesetzt.
+Zusätzlich gibt es zwei neue Klassen: Base und Pawn
+
+protected abstract class Token {
+	private Position position;
+	private PlayerColor color;
+	private TokenType type;
+	private int range;
+	
+	protected Token(Position position, PlayerColor color, TokenType type)
+	protected Token() {}
+	
+	protected Position getPosition()
+	protected PlayerColor getColor()
+	protected TokenType getType()
+	protected int getRange()
+	
+	protected void setPosition(Position position)
+	protected void setColor(PlayerColor color)
+	protected void setType(TokenType type)
+	protected void setRange(int range)
+	protected abstract void updateRange()
+}
+
+
+protected class Base {
+
+}
+
+protected class Pawn {
+
+}
+

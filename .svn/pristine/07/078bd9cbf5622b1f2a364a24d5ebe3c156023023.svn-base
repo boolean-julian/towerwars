@@ -1,0 +1,154 @@
+package towerwarspp.board;
+
+/** Klasse, die f&uuml;r TowerWarsPP ein Spielbrett-Objekt erzeugt und von BasicBoard.java erbt.
+ *	Dar&uuml;ber hinaus liefert diese Klasse Methoden, die alle m&ouml;glichen Spielz&uuml;ge ausgibt und diese anhand einer
+ *	simplen Strategie bewertet.
+ *
+ *	@author Julian L&uuml;ken
+ */
+import towerwarspp.preset.*;
+public class ExtendedBoard extends BasicBoard {
+
+	/** Konstruktor, der die Spielfeldgr&ouml;&szlig; entgegennimmt und ein neues Spielbrett instanziert wie BasicBoard.java,
+	 *	@param size Gr&ouml;&szlig;e des Spielbretts
+	 */
+	public ExtendedBoard(int size) {
+		super(size);
+	}
+	
+	public ExtendedBoard() {}
+
+	/** Methode, die alle m&ouml;glichen und erlaubten Spielz&uuml;ge eines Spielers als Liste ausgibt
+	 *	@param col Spielerfarbe
+	 *	@return Liste der Spielz&uuml;ge
+	 */
+	public List<Move> getLegalMoves(PlayerColor col) {
+		List<Move> moveList = new List<Move>;
+		List<Position> posList;
+		Move move;
+		Token startToken;
+		for (int i = 0; i < size; i++) {
+			for (int j = 0; j < size; j++) {
+				startToken = roster[i][j].getToken();
+				if (startToken != null && startToken.getType() != BASE && startToken.getColor() == col ) {
+					posList = getNeighborhood(new Position(i+1, j+1), startToken.getRange());
+					for ( Position pos : posList ) {
+						move = new Move(new Position(i+1,j+1), pos);
+						if (isLegal(move)) {
+							moveList.add(move);
+						}
+					}
+				}
+			}
+		}
+		return moveList;
+	}
+						
+	/*
+		for (int k = 0; k < size; k++) {
+			for (int h = 0; h < size; h++) {
+				move = new Move(new Position(i+1,j+1), new Position(k+1,h+1));
+				if (isLegal(move)) {
+					moveList.add(move);
+				}
+			}
+		}
+	*/
+	
+
+	/** Hilfsmethode, die die Nachbarschaft von einer Position ermittelt.
+	 *	@param pos Position
+	 *	@param range relative Reichweite der Nachbarschaft
+	 *	@return Liste der Positionen
+	 */
+	private List<Position> getNeighborhood(Position pos, int range) {
+		List<Position> list = new List<Position>;
+		int x = Position.getLetter();
+		int y = Position.getNumber();
+		int max, min;
+		for (int i = -range; i <= range; i++) {
+		
+			if ( -range > -i-range ) {
+				max = -range;
+			}
+			else {
+				max = -i-range;
+			}
+			if ( range < -i+range ) {
+				min = range;
+			}
+			else {
+				min = -i+range;
+			}
+			
+			for (int j = max; j <= min; j++) {
+					list.add(Position(i,j);
+			}
+		}
+		return list;
+	}
+
+	/** Methode f&uuml;r KI-Gegner, die einen Zug bewertet. Dabei wird bewertet, inwiefern der Zug daf&uuml;r sorgt, dass man einen gegnerischen Spielstein bezwingt
+	 *	oder sich in Richtung der gegnerischen Basis bewegt. Z&uuml;ge, die das Spiel gewinnen oder das Verlieren vermeiden, werden dabei bevorzugt
+	 *	@param move zu bewertender Spielzug
+	 *	@return Punktewertung f&uuml;r den Zug. Dabei steht 100 f&uuml;r einen rettenden Zug und 101 f&uuml;r einen gewinnenden Zug
+	 */
+	public int evaluateMove(Move move) {		
+		if (isWinning(move)) { // gewinnender Zug
+			return 101;
+		}
+		if (isSaving(move)) {	// rettender Zug
+			return 100;
+		}
+
+		int rbase = 0; // Punkte fuer das Bewegen in Richtung gegnerischer Basis
+		int bkick = 0; // Punkte fuer das Schlagen eines Spielsteins
+		
+		PlayerColor startColor	= move.getStart().findCell().getToken().getColor();
+		if (startColor == RED) {
+			rbase = getDistance(new Position(size, size),move.getStart()) - getDistance(new Position(size, size), move.getEnd());
+		}
+		
+		else if (startColor == BLUE) {
+			rbase = getDistance(new Position(1, 1),move.getStart()) - getDistance(new Position(1, 1), move.getEnd());
+		}
+
+		if (move.getStart().findCell().getToken() != null && move.getEnd().findCell().getToken() != null) {
+			PlayerColor endColor	= move.getEnd().findCell().getToken().getColor();
+			TokenType 	type		= move.getEnd().findCell().getToken().getType();
+			if (endColor != startColor) {
+				if (type == PAWN) {			// Bauern schlagen
+					bkick = 1;
+				}
+				else if (type == TOWER) {	// Turm schlagen
+					bkick = 2;
+				}
+				else if (type == BASE) {
+					return 101;
+				}
+			}
+		}
+		return bkick + rbase;
+	}
+
+	/** Hilfsmethode f&uuml;r evaluateMove. Berechnet, ob der Zug gewinnen kann.
+	 *	@return true, falls es so ist, sonst false.
+	 */
+	private boolean isWinning(Move move, PlayerColor color)) {
+		List<Move> legalMoves = getLegalMoves(color);
+		for (Move legalMove : legalMoves) {
+			
+		}
+		return false;
+	}
+	/** Hilfsmethode f&uuml;r evaluateMove. Berechnet, ob der Zug eine Niederlage verhindern kann
+	 *	@return true, falls es so ist, sonst false.
+	 */
+	private boolean isSaving(Move move, PlayerColor color)) {
+		List<Move> legalMoves = getLegalMoves(color);
+		for (Move legalMove : legalMoves) {
+		
+		}
+		return false;
+	}
+}

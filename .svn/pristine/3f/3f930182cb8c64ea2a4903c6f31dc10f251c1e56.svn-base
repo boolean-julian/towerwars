@@ -1,0 +1,84 @@
+package towerwarspp.gfx;
+/**	Klasse, die Sechsecke darstellt.
+ *	Erbt von JButton
+ *	@author Julian L&uuml;ken
+ */
+import java.awt.*;
+import javax.swing.*;
+import towerwarspp.preset.*;
+import towerwarspp.board.*;
+public class HexagonButton extends JButton {
+	private Hexagon hexagon;
+	private Token 	token;
+	
+	private final static Color BORDER 	= new Color(0f,0f,0f);
+	private final static Color RED 		= new Color(1f,0f,0f);
+	private final static Color BLUE 	= new Color(0f,0f,1f);
+	private final static Color EMPTY 	= new Color(1f,1f,1f);
+	
+	public HexagonButton(Hexagon hexagon, Token token) {
+		super();
+		this.hexagon = hexagon;
+		this.token = token;
+	}
+
+	public HexagonButton() {
+		super();
+		this.hexagon = null;
+		this.token = null;
+	}
+	
+	
+	@Override
+	protected void paintComponent(Graphics g) {
+		g.setColor(EMPTY);
+		g.fillPolygon(hexagon);
+		if (token != null) {
+			switch (token.getColor()) {
+				case RED:
+					g.setColor(RED);
+					break;
+				case BLUE:
+					g.setColor(BLUE);
+					break;
+			}
+			switch (token.getType()) {
+				case PAWN:
+					g.fillOval(hexagon.getRadius()*3/4,hexagon.getRadius()*3/4,hexagon.getRadius()/2,hexagon.getRadius()/2);
+					break;
+				case BASE:
+					g.fillPolygon(hexagon);
+					break;
+				case TOWER:
+					Tower tower = (Tower) token;
+					g.fillOval(hexagon.getRadius()*1/2,hexagon.getRadius()*1/2,hexagon.getRadius(),hexagon.getRadius());
+					g.setColor(EMPTY);
+					g.drawString(tower.getHeight()+"",hexagon.getRadius(), hexagon.getRadius()	);
+					if (tower.isBlocked()) {
+						g.setColor(BLUE);
+						g.fillOval(hexagon.getRadius()*1/2, hexagon.getRadius()*1/2,hexagon.getRadius()/3,hexagon.getRadius()/3);
+					}
+					break;
+			}
+		}
+	}
+	
+	@Override
+	public Dimension getPreferredSize() {
+		return new Dimension(hexagon.getRadius()*2, hexagon.getRadius()*2);
+	}
+	
+	@Override
+	protected void paintBorder(Graphics g) {
+		g.setColor(BORDER);
+		g.drawPolygon(hexagon);
+	}
+	
+	Shape shape;
+	public boolean contains(int x, int y) {
+		if (shape == null || !shape.getBounds().equals(getBounds())) {
+			shape = hexagon;
+		}
+		return shape.contains(x,y);
+	}
+}

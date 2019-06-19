@@ -1,0 +1,81 @@
+package towerwarspp.board;
+
+import towerwarspp.preset.*;
+/**
+ * Diese Klasseerweitert Token und implementiert einen Turm aus Towerwars
+ * @author Marcel Hellwig und Julian L&uuml;ken
+ */
+public class Tower extends Token {
+    // Instanzvariablen
+    /**
+     * Die Hoehe dieses Turms
+     */
+	private int height;
+    /**
+     * Gibt an ob dieser Turm blockiert wird
+     */
+	private boolean blocked;
+
+    // Konstruktoren
+    /**
+     * Konstruktor mit uebergebener Position und Farbe
+     * Die Default-Werte sind hoehe = 1, blocked = false und type = TokenType.TOWER
+     * @param position = Position an der sich dieses Token befindet
+     * @param color = Farbe dieses Tokens
+	 * @param board = Board auf dem sich dieser Turm befindet
+     */
+    public Tower(Position position, PlayerColor color, BasicBoard board) {
+        super(position, color, TokenType.TOWER, board);
+        height = 1;
+        blocked = false;
+    }
+	/**
+	 * Kopierkonstruktor
+	 * @param tower = Zu kopierender Tower 
+	 */
+	public Tower(Tower tower) {
+		super(tower.getPosition(), tower.getColor(), TokenType.TOWER, tower.getBoard());
+		height = tower.getHeight();
+		blocked = tower.isBlocked();
+	}
+
+    // Getter/Setter
+	/**
+     * Getter fuer height
+     * @return Hoehe dieses Turmes
+     */
+    public int getHeight() {return height;}
+    /**
+     * Getter fuer blocked
+     * @return true, wenn dieser Turm blockiert ist, false sonst
+     */
+    public boolean isBlocked() {return blocked;}
+    /**
+     * Setter fuer height
+     * @param height = neue Hoehe dieses Turms
+     */
+    private void setHeight(int height) {
+        if(height <= 0 || height > (getBoard().getSize() / 3)) {
+            throw new IllegalArgumentException("Ein Turm kann auf diesem Spielfeld nicht die Hoehe " + height + " haben");
+        }
+        this.height = height;
+    }
+    /**
+     * Setter fuer blocked
+     * @param blocked = Gibt an ob der Turm auf blockiert gesetzt wird oder auf nicht blockiert
+     */
+    private void setBlocked(boolean blocked) {this.blocked = blocked;}
+
+	// Methoden
+	/**
+	 * Getter-Methode fuer die Bewegungsreichweite dieses Tower
+	 * @return Bewegungsreichweite dieses Turms
+	 */
+	public int getRange() {
+		if(blocked == true) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
+}

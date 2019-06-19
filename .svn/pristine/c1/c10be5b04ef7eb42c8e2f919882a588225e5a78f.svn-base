@@ -1,0 +1,2 @@
+Instanzvariable currentPlayer in SavedMove hinzugefügt
+protected PlayerColor getCurrentPlayer() in SavedMove hinzugefügt

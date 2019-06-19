@@ -1,0 +1,30 @@
+package towerwarspp.Spieler;
+import towerwarspp.io.EinAusgabe;
+import towerwarspp.preset.Move;
+/**Klasse der Interaktiven spielers, der über die Eingabezeile angesprochen wird
+*/
+public class InterActSpieler extends Spieler{
+	
+	private EinAusgabe einAusgabe;
+	/** Konstruktor
+	@param einAusgabe ein EinAusgabe-Objekt
+	*/
+	public InterActSpieler(EinAusgabe einAusgabe){
+		super();
+		this.einAusgabe = einAusgabe;
+	}
+
+	/**
+	 * Setter fuer einAusgabe
+	 * @param einAusgabe = neues einAusgabe-Objekt
+	 */
+	public void setEinAusgabe(EinAusgabe einAusgabe) {this.einAusgabe = einAusgabe;}
+
+	/** Überschreibt von Spieler geerbte Methode getNextmove()
+	@return von der EinAusgabe eingelesener Zug
+	*/
+	@Override
+	protected Move getNextMove(){
+		return einAusgabe.deliver();
+	}
+}

@@ -1,0 +1,38 @@
+package towerwarspp.gfx;
+
+import javax.swing.*;
+import java.awt.*;
+import towerwarspp.preset.*;
+import towerwarspp.board.*;
+
+
+
+public class TowerWarsGUI {
+	private final static int PADDINGTOP		= 5;
+	private final static int PADDINGLEFT	= 5;
+
+	public static void createAndShowGUI(BasicBoard board, int hexaSize) {
+		JFrame frame = new JFrame("Testklasse fuer Hexagon");
+		Token[][] tokens = board.getTokens();
+		
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		JPanel panel = new JPanel();
+		panel.setLayout(null);
+		
+		board.executeMove(new Move(new Position(1,2), new Position(1,3)));
+		
+		int rowPadding = 0;
+		for (int i = 0; i < board.getSize(); i++) {
+			for (int j = 0; j < board.getSize(); j++) {
+				HexagonButton hb = new HexagonButton(new Hexagon(hexaSize),tokens[i][j]);
+				hb.setBounds(i*2*hexaSize+j*hexaSize+PADDINGLEFT, (j*2*hexaSize-j*hexaSize/4)+PADDINGTOP, 2*hexaSize, 2*hexaSize);
+				// hier muessen noch die actionlistener rein
+				panel.add(hb);
+			}
+		}
+		
+		frame.add(panel);
+		frame.setSize(board.getSize()*hexaSize*3, board.getSize()*hexaSize*2);
+		frame.setVisible(true);
+	}
+}

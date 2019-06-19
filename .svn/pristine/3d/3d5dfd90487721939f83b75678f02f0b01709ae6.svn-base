@@ -1,0 +1,143 @@
+package towerwars.Spieler;
+import towerwars.Board;
+
+public class Spieler implements towerwars.preset.Player {
+	//Erzeuge eigenens Spielbrett --
+	//Aktualisiere Spielbrett --
+	//Prüfe Status auf Widerspruch --
+	//Prüfe, ob Methoden der Player-Schnittstelle in der richtigen Reihenfolge aufgeruen werden --
+	//Reihenfolge ROT: init {request, confirm, update}* bis Spielende -- 
+	//Reihenfolge BLAU: init {update, request, confirm}* bis Spielende --
+	//Init:  --
+		//Neues Brett wird initialisiert --
+		//Parameter Farbe wird gesetzt --
+	// Request: 
+		//bekommt den nächsten zug--
+	//Confirm:
+		//Übergibt dem Spieler im Parameter boardStatus Informationen über den letzten mit request vom Spieler gelieferten Zug.
+	//update:
+		//Liefert opponentMove: den letzten zug des Gegners und im Parameter boardStatus Informationen dazu --
+	
+	
+	//Parameter:
+	protected Spielbrett board;
+	protected int currentstatus; 
+	//Nach initialisierung: 0 je nach Spielerfarbe entsprechen request, confirm, update 0, 1, 2
+	//Nach Mathodenaufruf wird um 1 erhöht und %3 gerechnet. Zweck: checken, ob Methodenaufrufe in der korrekten Reihenfolge stattfinden, sonst Exception
+	protected PlayerColor color;
+	//Spielerfarbe
+	protected Move prevmove;
+	//Speichert den letzten Zug
+	
+	//Methoden:
+	/** Fordert vom Spieler einen Zug an
+	@return Nächster Zug des Spielers
+	*/
+	
+	//request------------------------------------------------------------------------------
+	
+    Move request() throws Exception, RemoteException{
+		//Checke vorherigen Aufruf
+		if (currentstatus == null || !(currentstatus%3 == 0 && color == RED) || !(currentstatus%3 == 1 && color == BLUE)){
+			throw new Exception("request wurde aufgerufen, kann aber nicht ausgeführt werden");
+		}
+		currentstatus++;
+		currentstatus = currentstatus % 3;		//Damit crrentstatus nicht zu groß werden kann, wird es regelmäßig normiert
+		//Fordert vom Spieler einen zug an
+			//Irgendwie von der GUI einen Zug einlesen
+		prevmove = getNextMove(); //Notiz: nochmal checken ob das so passt
+		return prevmove;
+		
+	}
+	
+	//confirm--------------------------------------------------------------------------------
+	
+	/** Prüft, ob der letzte Zug ausgeführt werden konnte und führt ihn danch auf dem eigenen 		Board aus
+	@param boardStatus Status des Spielbretts, nach dem ausführen des Zuges
+	*/
+    void confirm(Status boardStatus) throws Exception, RemoteException{
+		//Checke vorherigen Aufruf
+		if (currentstatus == null || !(currentstatus%3 == 1 && color == RED) || !(currentstatus%3 == 2 && color == BLUE)){
+			throw new Exception("confirm wurde aufgerufen, kann aber nicht ausgeführt werden");
+		}
+		currentstatus++;
+		//Führt auf eigenem Board den letzten Move aus
+		board.move(prevmove);
+		//Checkt Status
+		if (boardStatus != board.status)
+			throw new Exception("Spielereigenes Board ist asynchron");
+	}
+	
+	//update--------------------------------------------------------------------
+	
+	/**	aktualisiert das lokale Board nach dem gegnerischen Zug
+	@param opponentMove Zug des Gegners
+	@param boardStatus Status des Boards nach Ausführen des gegnerischen Zuges
+	*/
+    void update(Move opponentMove, Status boardStatus) throws Exception, RemoteException{
+		//Checke vorherigen Aufruf
+		if (currentstatus == null || !(currentstatus%3 == 2 && color == RED) || !(currentstatus%3 == 0 && color == BLUE)){
+			throw new Exception("update wurde aufgerufen, kann aber nicht ausgeführt werden");
+		}
+		currentstatus++;
+		
+		//Updatet eigenes Board
+			//Annahme: Zug war gültig
+		board.move(opponentMove);
+		if (boardStatus != board.status)
+			throw new Exception("Spielereigenes Board ist asynchron");
+	}
+	
+	//init------------------------------------------------------------------------------
+	
+	/** initialisert den Spieler, indem das lokale Board erstellt wird und die Spielerfarbe festgelegt wird
+	kann jederzeit aufgerufen werden
+	@param size Größe des Boards
+	@param color Spielerfarbeddddddddddddddddd
+	*/
+    void init(int size, PlayerColor color) throws Exception, RemoteException{
+	   	//Status <- 0, falls == null, um mitzuteilen, dass mind. 1 mal initialisiert wurde
+   		currentstatus = 0;
+    	//initialisert eigenes Board und Spielerfarbe
+    	board = new Spielbrett(size);
+    	this.color = color;
+	}
+	   
+	/** Hilfsmethode zum ermitteln des nächsten Spielzuges
+	@return nächster Spielzug
+	*/
+	protected Move getNextMove(){
+		return deliver();  
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

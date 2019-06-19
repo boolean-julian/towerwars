@@ -1,0 +1,101 @@
+package towerwarspp.board;
+
+/**
+ * Die Klasse Token stellt die Implementation einer Spielfigur aus Towerwars da
+ * Die Funktion der Spielfigur wird hierbei durch den TokenType und die PlayerColor bestimmt
+ */
+protected class Token {
+	// Instanzvariablen
+    /**
+     * @param cell = Zelle in der sich das Token befindet
+     */
+	private Cell cell;
+    /**
+     * @param color = Die Farbe dieses Tokens
+     */
+	private PlayerColor color;
+    /**
+     * @param type = Der Typ dieses Tokens (Pawn, Base, Tower)
+     */
+	private TokenType type;
+
+	// Konstruktoren
+    /**
+     * Konstruktor mit uebergebener Zelle, Farbe und und Typ
+     * @param c = Zelle in der sich dieses Token befindet
+     * @param col = Farbe dieses Tokens
+     * @param t = Typ dieses Token
+     */
+	protected Token(Cell c, PlayerColor col, TokenType t) {
+		here = c;
+		color = col;
+		type = t;
+	}
+
+	// Getter/Setter
+    /**
+     * Getter fuer cell
+     * @return Zelle in der sich dieses Token befindet
+     */
+	protected Cell getCell() {return here;}
+    /**
+     * Getter fuer color
+     * @return Farbe dieses Tokens
+     */
+	protected PlayerColor getColor() {return color;}
+    /**
+     * Getter fuer type
+     * @return Typ dieses Tokens
+     */
+	protected TokenType getType() {return type;}
+    /**
+     * Setter fuer cell
+     * @param c = Neue Zelle in der sich dieses Token befindet
+     */
+	protected void setCell(Cell c) {here = c;}
+    /**
+     * Setter fuer color
+     * @param col = Neue Farbe dieses Tokens
+     */
+	protected void setColor(PlayerColor col) {color = col;}
+    /**
+     * Setter fuer type
+     * @param t = Neuer Typ dieses Tokens
+     */
+	protected void setType(TokenType t) {type = t;}
+
+    // Methoden
+    /**
+     * Diese Methode gibt die Bewegungsreichweite eines Tokens an, eine Basis hat hierbei Reichweite 0 und ein Turm Reichweite 1
+     * @return Bewegungsreichweite dieses Token
+     */
+    protected int getRange() {
+        if(type == TokenType.BASE) {                                                            // Base: 0
+            return 0;
+        }
+        if(type == TokenType.TOWER) {                                                           // Tower: 1, Blockierter Tower: 0
+            if((Tower)this.isBlocked()) {
+                return 0;
+            }
+            return 1;
+        }
+        r = 1;                                                                                  // Standardreichweite Pawn: 1
+        Position pos = getCell().getPosition();                                  // Mit Cell verändern
+        int letter = pos.getLetter();
+        int number = pos.getNumber();
+        int size = getCell().getBoard().getsize();
+        List<Position> neighbors = new List<Position>;
+        if(letter > 1) {neighbors.add(new Position(letter - 1, number));}
+        if(number > 1) {neighbors.add(new Position(letter, number - 1));}
+        if(letter < size) {neighbors.add(new Position(letter + 1, number));}
+        if(number < size) {neighbors.add(new Position(letter, number + 1));}
+        if(letter > 1 && number < size) {neighbors.add(new Position(letter - 1, number + 1));}
+        if(letter < size && number > 1) {neighbors.add(new Position(letter + 1, number - 1));}
+        for(Position elem : neighbors) {
+            Token t = elem.findCell().findToken();
+            if(t != null && t.getType() == TokenType.TOWER && !(((Tower)t).isBlocked())) {
+                r += ((Tower)t).getHeight();                                                    // Bonus durch angrenzende Tuerme
+            }
+        }
+        return r;
+}

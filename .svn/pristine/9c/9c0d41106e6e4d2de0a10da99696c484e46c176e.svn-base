@@ -1,0 +1,27 @@
+package towerwarspp.board;
+
+/**
+ * Diese Klasse ist eine Implementation einer Basis von Towerwars und erbt von Token
+ */
+protected class Base extends Token {
+	// Konstruktoren
+	/**
+	 * Parameterloser Standardkonstruktor
+	 */
+	protected Base() {}
+	/**
+	 * Konstruktor mit allen Attributen
+	 * @param position = Position an der sich dieses Token befindet
+     * @param color = Farbe dieses Tokens
+	 */
+	protected Base(Position position, PlayerColor color, BasicBoard board) {
+		super(position, color, TokenType.BASE, board);
+		range = 0;
+	}
+	
+	// Methoden
+	/**
+	 * Die Methode updatet die Reichweite dieser Basis
+	 */
+	protected void updateRange() {}
+}

@@ -1,0 +1,170 @@
+package towerwarspp.Spieler;
+import java.util.Random;
+import java.util.List;
+import towerwarspp.preset.*;
+import towerwarspp.Exceptions.*;
+import towerwarspp.board.*;
+
+
+public class KrasseCPU extends Spieler {
+
+	//Bestimmt bei gleichwertigen Zuegen zufaellige einen davon
+	private Random random;
+	
+	private ExtendedBoard extboard;
+	
+	private Token[][] tokens = board.getTokens();
+	
+	//All non-BASE-Tokens werden heir anch Farbe eingespeichert
+	private List <Token> redTokenList;	
+	private List <Token> blueTokenList;
+	
+	/**
+	Konstruktor fuer die CPU
+	*/
+	public KrasseCPU(){
+		super();
+		random = new Random();
+	}
+	/**	Ermittelt einen nächsten zufälligen Move
+	@return nächster Move
+	*/
+	@Override
+	protected Move getNextMove(){
+		return null;
+	}
+	
+	/**
+	fuegt die farbigen Tokens in die entsprechend gekenntzeichneten Listen hinzu
+	*/
+	private void addTokensToLists(){
+	
+		//Iteriert durch das ganze Spielfeld der groessei*j
+		for(int i = 0; i < extboard.getSize(); i++)
+			for(int j = 0; j < extboard.getSize(); j++){
+			
+				//Wenn ein Token sich auf dem Feld befindet
+				if(tokens[i][j] != null && tokens[i][j].getType() != TokenType.BASE){
+					
+					//Bei roten Token auf dem Feld
+					if(tokens[i][j].getColor() == PlayerColor.RED){
+						redTokenList.add(tokens[i][j]);
+					}
+					
+					//Bei blauem Token auf dem Feld
+					else{
+						blueTokenList.add(tokens[i][j]);
+					}
+				}
+			}
+	}
+	
+	/**
+	Die Methode vergleicht vorerst die Farbe der Spielsteine und bestimmt dadurch die gegnerischen
+	Spielsteine, die den uebergebenen Spielstein zu schlagen gefaehrden.
+	Dies geschieht anhand der Bewegungsreichweite(range), die die einzelnen Spielsteine besitzen.
+	sollte eine Base uebergeben werden, so wird sie gecatcht und mit einem extremst hohen
+	negativen Wert zugewiesen. Das soll verhindern, dass der Zug von der CPU ausgewaehlt wird.
+	@param token ist der zubetrachtende Spielstein
+	@return gibt die Anzahl der gegnerischen Spielsteine an, die den uebergebenen Token schlagen koennten
+	*/
+	public int checkIsEndangered(Token token){
+		
+		//Wie viele gegnerische Tokens bedrohen den Token
+		int count = 0;
+		Position tokenPosi = token.getPosition();
+		
+			//rote Spielsteine
+			if(token.getColor() == PlayerColor.RED){
+			
+				//Iteriert über alle blauen Token und vergleicht Range mit Distance zum Token
+				for(int i = 0; i < blueTokenList.size(); i++){
+					if (blueTokenList.get(i).getRange() >= extboard.getDistance(tokenPosi, blueTokenList.get(i).getPosition())){
+						count++;
+					}
+				}
+			}
+			
+			//blaue Spielsteine
+			if(token.getColor() == PlayerColor.BLUE){
+			
+				//Iteriert über alle roten Token und vergleicht Range mit Distance zum Token
+				for(int i = 0; i < redTokenList.size(); i++){
+					if (redTokenList.get(i).getRange() >= extboard.getDistance(tokenPosi, redTokenList.get(i).getPosition())){
+						count++;
+					}
+				}
+			}
+		
+		
+		return count;
+	}
+	
+	@Override
+	public void update(Move opponentMove, Status boardStatus) throws Exception{
+		//Checke, ob die zuletzt aufgerufene Methode confirm bzw init war
+		selectException("update");
+		currentStatus++;
+		
+		//Updatet eigenes Board, indem der gegnerische Zug ausgeführt wird
+		board.executeMove(opponentMove);
+		if (boardStatus != board.getStatus())
+			throw new Exception("Spielereigenes Board ist asynchron");
+		Position endpos = opponentMove.getEnd();
+		
+	}
+	//Ist der zuschlagende Stein von einem anderen token gecovert?
+	int checkCovered(Token token){
+		
+		//Wie viele eigene Tokens decken den Token
+		int count = 0;
+		Position tokenPosi = token.getPosition();
+		
+			//blaue Spielsteine
+			if(token.getColor() == PlayerColor.BLUE){
+				//Iteriert über alle blauen Token und vergleicht Range mit Distance zum Token
+				for(int i = 0; i < blueTokenList.size(); i++){
+					if (blueTokenList.get(i).getRange() >= extboard.getDistance(tokenPosi, blueTokenList.get(i).getPosition())){
+						count++;
+					}
+				}
+			}
+			
+			//rote Spielsteine
+			if(token.getColor() == PlayerColor.RED){
+				//Iteriert über alle roten Token und vergleicht Range mit Distance zum Token
+				for(int i = 0; i < redTokenList.size(); i++){
+					if (redTokenList.get(i).getRange() >= extboard.getDistance(tokenPosi, redTokenList.get(i).getPosition())){
+						count++;
+					}
+				}
+			}
+		return count-1;	
+	}
+		
+
+	
+
+	//wie viele Bauern um den Tower der selben Farbe stehen
+	int surroundingTower(Tower tower){
+		int count = 0;
+		if (tower.getColor() == PlayerColor.RED){
+			for(Token token : redTokenList){
+				if (extboard.getDistance(tower.getPosition(), token.getPosition()) == 1 && token.getType() == TokenType.PAWN)
+					count++;
+			}
+			
+		} else 
+			for(Token token : blueTokenList){
+				if (extboard.getDistance(tower.getPosition(), token.getPosition()) == 1 && token.getType() == TokenType.PAWN)
+					count++;
+			}
+		return count;
+	}
+	
+	//valuiert den Zug fuer die Konstruktion eines Turms
+	int checkTowerBuild(){return 0;}
+
+}
+
+

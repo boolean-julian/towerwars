@@ -1,0 +1,57 @@
+package towerwarspp.board;
+
+import towerwarspp.preset.*;
+import java.util.LinkedList;
+/**
+ * Diese Klasse bildet die Implementation eines Pawns aus Towerwars und erbt von Token
+ * @author Marcel Hellwig und Julian L&uuml;ken
+ */
+public class Pawn extends Token {
+	// Konstruktoren
+	/**
+	 * Konstruktor mit position, color und board
+	 * @param position = Position an der sich dieses Token befindet
+     * @param color = Farbe dieses Tokens
+     * @param board = Spielbrett auf welchem sich der Token befindet
+	 */
+	protected Pawn(Position position, PlayerColor color, BasicBoard board) {
+		super(position, color, TokenType.PAWN, board);
+	}
+	/**
+	 * Kopierkonstruktor
+	 * @param pawn = zu kopierender Pawn
+	 */
+	protected Pawn(Pawn pawn) {
+		super(pawn.getPosition(), pawn.getColor(), TokenType.PAWN, pawn.getBoard());
+	}
+	
+	// Methoden
+	/**
+	 * Diese Methode gibt die Bewegungsreichweite dieses Pawns zurueck
+	 * @return Bewegungsreichweite dieses Pawn
+	 */
+	public int getRange() {
+		// Standardreichweite Pawn: 1
+		int r = 1;
+        Position pos = getPosition();
+        int letter = pos.getLetter();
+        int number = pos.getNumber();
+        int size = getBoard().getSize();
+        LinkedList<Position> neighbors = new LinkedList<Position>();
+        if(letter > 1)					{neighbors.add(new Position(letter - 1, number));}
+        if(number > 1)					{neighbors.add(new Position(letter, number - 1));}
+        if(letter < size)				{neighbors.add(new Position(letter + 1, number));}
+        if(number < size) 				{neighbors.add(new Position(letter, number + 1));}
+        if(letter > 1 && number < size) {neighbors.add(new Position(letter - 1, number + 1));}
+        if(letter < size && number > 1) {neighbors.add(new Position(letter + 1, number - 1));}
+        for(Position elem : neighbors) {
+			// findToken ist keine Methode von Position...
+            Token t = getBoard().findToken(elem);
+            if(t != null && t.getType() == TokenType.TOWER && !(((Tower)t).isBlocked()) && t.getColor() == getColor()) {
+				// Bonus durch angrenzende Tuerme
+                r += ((Tower)t).getHeight();
+            }
+        }
+        return r;
+	}
+}

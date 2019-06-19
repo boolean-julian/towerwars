@@ -1,0 +1,96 @@
+package towerwarspp.Spieler;
+
+import java.rmi.*;
+import java.rmi.server.UnicastRemoteObject;
+import java.net.*;
+import java.util.Scanner;
+import towerwarspp.io.EinAusgabe;
+import towerwarspp.Spieler.InterActSpieler;
+import towerwarspp.board.*;
+import  towerwarspp.gfx.*;
+import towerwarspp.preset.*;
+
+/**
+Netzwerkspieler
+@author Oskar Wittkamp
+*/
+
+public class NetPlayer extends UnicastRemoteObject implements Player{
+	
+	private boolean isGraphic;
+	private boolean isDebug;
+	private Scanner scanner;
+	private Spieler spieler;
+	private EinAusgabe einAusgabe;
+	
+	//------------------------------------------------------
+	
+	public NetPlayer(Spieler spieler, boolean isGraphic, boolean isDebug) throws RemoteException{
+		this.spieler = spieler;
+		this.isGraphic = isGraphic;
+		this.isDebug = isDebug;
+		scanner = new Scanner(System.in);
+	}
+	
+	/**generiert einen nächsten Spielzug
+	Falls die GUI nicht von der eigenen Main verwaltet wird, synchronisiere die eigene GUI mit dem eigenen Board
+	@return nächster Spielzug
+	*/
+	@Override
+	public Move request() throws Exception, RemoteException{
+		Move m = spieler.request();
+		return m;
+	}
+	
+	/**updatet das eigene Board, indem der gegnerische Zug ausgeführt wird
+	@param opponentMove gegnerischer neuer Zug
+	@param boardStatus Status des Host-Boards, nach dem gegnerischen Zug
+	*/
+	@Override
+	synchronized public void update(Move opponentMove, Status boardStatus) throws Exception, RemoteException{
+		spieler.update(opponentMove, boardStatus);
+		if(isGraphic){
+			einAusgabe.updateGUI();
+		}
+		if(isDebug){
+			System.out.println((char)27 + "[0m");
+			System.out.println(einAusgabe);
+		}
+	}
+	
+	/**prüft, ob der eigene Zug auf dem Server ausgeführt werden konnte
+	@param boardStatus Status des Server-Boards nach ausführen des eigenen Moves
+	*/
+	@Override
+	synchronized public void confirm(Status boardStatus) throws Exception, RemoteException{
+		spieler.confirm(boardStatus);
+		if(isGraphic){
+			einAusgabe.updateGUI();
+		}
+		if(isDebug){
+			System.out.println((char)27 + "[0m");
+			System.out.println(einAusgabe);
+		}
+	}
+	
+	/**initialisiert den NetPlayer
+	@param size Spielbrettgröße
+	@param color Spielerfarbe
+	*/
+	@Override
+	public void init (int size, PlayerColor color) throws Exception, RemoteException{
+		spieler.init(size, color);
+		einAusgabe = new EinAusgabe(spieler.getBoard(), scanner);
+		if(spieler instanceof InterActSpieler) {
+			((InterActSpieler)spieler).setEinAusgabe(einAusgabe);
+		}
+		if(isGraphic){			
+			einAusgabe.showGUI();
+			einAusgabe.setGuiInput(true);
+		}
+		if(isDebug){
+			System.out.println((char)27 + "[0m");
+			System.out.println(einAusgabe);
+		}	
+	}
+}

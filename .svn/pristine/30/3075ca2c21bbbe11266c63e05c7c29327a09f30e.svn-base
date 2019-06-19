@@ -1,0 +1,67 @@
+Cell.java wurde entfernt, entsprechende Referenzen werden in den anderen Klassen gesetzt.
+Zusätzlich gibt es zwei neue Klassen: Base und Pawn
+Token und Tower werden verändert
+
+protected abstract class Token {
+	private Position position;
+	private PlayerColor color;
+	private TokenType type;
+	private int range;
+	private BasicBoard board;
+	
+	protected Token(Position position, PlayerColor color, TokenType type, BasicBoard board)
+	protected Token() {}
+	
+	protected Position getPosition()
+	protected PlayerColor getColor()
+	protected TokenType getType()
+	protected int getRange()
+	protected BasicBoard getBoard()
+	
+	protected void setPosition(Position position)
+	protected void setColor(PlayerColor color)
+	protected void setType(TokenType type)
+	protected void setRange(int range)
+	protected void setBoard(BasicBoard board)
+	
+	protected abstract void updateRange()
+}
+
+protected class Tower extends Token {
+	private int height;
+	private boolean blocked;
+	
+	protected Tower()
+	protected Tower(Position position, Playercolor color, BasicBoard board)
+	
+	protected int getHeight()
+    protected boolean isBlocked()
+    
+    protected void setHeight(int h)
+    protected void setBlocked(boolean b)
+    
+	protected int updateRange()
+}
+
+protected class Base extends Token {
+	protected Base() {}
+	protected Base(Position position, PlayerColor color, BasicBoard board)
+	
+	protected void updateRange()
+}
+
+protected class Pawn extends Token {
+	protected Pawn()
+	protected Pawn(Position position, PlayerColor color, BasicBoard board)
+	
+	protected int updateRange()
+}
+
+protected class BasicBoard {
+	Alles was Cell[][] ist wird zu Token[][] (das ist der Hauptgrund der fetten Änderung der Klassen)
+	
+	protected Token[][] getTokens() ist neu
+	
+	anstatt findCell gibt es jetzt:
+	protected Token findToken(Position position)
+}

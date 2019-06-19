@@ -1,0 +1,15 @@
+package towerwarspp.gfx;
+
+import towerwarspp.preset.*;
+import towerwarspp.board.*;
+
+public class Test {
+	public static void main (String[] args) {
+		//init
+		BasicBoard board = new BasicBoard(25);
+		TowerWarsGUI gui = new TowerWarsGUI(board);
+		gui.createAndShowGUI();
+		while (true)
+		System.out.println(gui.deliver());
+	}
+}

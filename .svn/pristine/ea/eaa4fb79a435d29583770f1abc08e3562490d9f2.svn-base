@@ -1,0 +1,548 @@
+package towerwarspp;
+import towerwarspp.board.BasicBoard;
+import towerwarspp.Spieler.*;
+import towerwarspp.io.EinAusgabe;
+import towerwarspp.preset.ArgumentParser;
+import towerwarspp.preset.ArgumentParserException;
+import towerwarspp.preset.Player;
+import towerwarspp.preset.PlayerColor;
+import towerwarspp.preset.PlayerType;
+import towerwarspp.preset.Move;
+import towerwarspp.preset.Status;
+import java.io.InputStream;
+import java.io.IOException;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.BufferedWriter;
+import java.io.PrintWriter;
+import java.util.Random;
+import java.util.Scanner;
+import java.rmi.RemoteException;
+
+/**
+ * Diese Klasse startet einen neuen Spieldurchlauf TowerWars. Beim Aufruf koennen folgende Flags und Parameter
+ * gesetzt werden: Flags:	--graphic			Setzen, damit das aktuelle Spielfeld grafisch ausgegeben wird
+ * 							--debug				Setzen, damit nach jedem Spielzug das Spielfeld und der durchgefuehrte Zug ausgegeben werden
+ * 							--replay			Setzen, damit ein in einer Logdatei gespeichertes Spiel wiederholt wird, erwartet Parameter log
+ * 							--offer				Setzen, damit ein Netzwerkspieler angeboten wird
+ * 							--standard			Setzen, damit ein normales Spiel durchgefuehrt wird
+ * 			   Parameter:	-size	int			Setzt die Groesse des Spielfeldes
+ * 							-delay	int			Setzt den Delay in Millisekunden, der nach jedem Zug gewartet wird
+ *							-red 	PlayerType	Setzt den Typ des roten Spielers
+ *							-blue 	PlayerType	Setzt den Typ des blauen Spielers
+ *							-log	String		Setzt das Logfile, das eingelesen werden soll, wenn replay gesetzt ist
+ *							-type	PlayerType	Setzt den Typ des Spielers, der als Netzwerkspieler angeboten wird
+ * Muster der Kommandozeilenargumente fuer die verschiedenen Anwenderfunktionen:
+ * Netwerkspieler bereitstellen:	--offer -type ______ --graphic
+ * Logdatei nachstellen:			--replay -log __________ --graphic -delay ____
+ * Spieldurchlauf starten:			--standard -size __ -red ______ -blue ______ --graphic -delay ____
+ * @author Marcel Hellwig
+ */
+public class TowerWars {
+	// Instanzvariablen
+	/**
+	 * Gibt an ob der Spieldurchlauf grafisch ausgegeben werden soll
+	 */
+	private boolean graphic = false;
+	/**
+	 * Gibt an ob der Spieldurchlauf textuell auf der Kommandozeile ausgegeben werden soll
+	 */
+	private boolean debug = false;
+	/**
+	 * Gibt an ob ein gespeicherter Log nachgestellt werden soll
+	 */
+	private boolean replay = false;
+	/**
+	 * Gibt an ob ein Netzwerkspieler bereitgestellt werden soll
+	 */
+	private boolean offer = false;
+	/**
+	 * Gibt an ob ein normales Spiel gespielt werden soll
+	 */
+	private boolean standard = false;
+	/**
+	 * Gibt die Groesse des Spielfeldes dieses Spieldurchlaufs an
+	 */
+	private Integer size = null;
+	/**
+	 * Gibt die Verzoegerung in Millisekunden an, die nach einem Spielzug gewartet werden soll
+	 */
+	private int delay = 0;
+	/**
+	 * Gibt die Logdatei an, die nachgestellt werden soll
+	 */
+	private File log = null;
+	/**
+	 * Gibt den Typen des Spielers an, der ueber Netzwerk bereitgestellt werden soll
+	 */
+	private PlayerType type = null;
+	/**
+	 * Der Scanner, der genutzt wird um die Eingabe waehrend dieses Spieldurchlaufs anzunehmen
+	 */
+	private Scanner input = null;
+	/**
+	 * Der Scanner, der genutzt wird um die Logdatei auszulesen
+	 */
+	private Scanner logScanner = null;
+	/**
+	 * Der Writer, der in die Logdatei schreibt
+	 */
+	private PrintWriter writer = null;
+	/**
+	 * Der Parser, der mit den Kommandozeilenargumenten initialisiert wurde
+	 */
+	private ArgumentParser parser = null;
+	/**
+	 * Der rote Spieler dieses Spieldurchlaufs
+	 */
+	private Player redPlayer = null;
+	/**
+	 * Der blaue Spieler dieses Spieldurchlaufs
+	 */
+	private Player bluePlayer = null;
+	/**
+	 * EinAusgabe-Objekt dieses Spieldurchlaufs
+	 */
+	private EinAusgabe einAusgabe = null;
+	/**
+	 * Spielfeld, das dieses Spiel Towerwars benutzt
+	 */
+	private BasicBoard board = null;
+	/**
+	 * Das log-File in dem dieser Spieldurchlauf gespeichert wird
+	 */
+	private File logFile = null;
+
+	// Konstruktoren
+	/**
+	 * Konstruktor mit uebergebenem InputStream und Parser-Argumenten
+	 * @param stream = InputStream, der fuer dieses Spiel TowerWars genutzt wird
+	 * @param args = Argumente, die der Standardparser entgegennimmt
+	 */
+	public TowerWars(InputStream stream, String[] args) {
+		input = new Scanner(stream);
+		try {
+			parser = new ArgumentParser(args);
+		} catch(ArgumentParserException exception) {
+			System.err.println("Parserargumente konnten nicht eingelesen werden");
+		}
+	}
+
+	// Methoden
+	/**
+	 * Diese Methode nimmt einen PlayerType entgegen und gibt einen neuen Spieler dieses Typen zurueck, falls dieser implementiert ist
+	 * @param type = Spielertyp den der Player haben soll
+	 * @return Spieler des uebergebenen Typs, falls der Typ nicht implementiert wurde null
+	 */
+	public Player getTypedPlayer(PlayerType type) {
+		switch(type) {
+			case HUMAN:
+				// Test ob bereits ein EinAusgabe-Objekt existiert
+				if(einAusgabe == null) {
+					einAusgabe = new EinAusgabe(board, input);
+				}
+				// Nutzen dieses Objektes zum Konstruieren des Spielers
+				return new InterActSpieler(einAusgabe);
+			case RANDOM_AI:
+				return new RandomCPUSpieler();
+			case SIMPLE_AI:
+				return new CPUSpieler();
+			default:
+				return null;
+		}
+	}
+
+	/**
+	 * Diese Methode erfragt auf der Eingabe, die dieses Towerwarsspiel nutzt eine Eingabe der Flags, die gesetzt werden sollen und setzt die Instanzvariablen
+	 * Auf Eingabefehler wird mit erneuter Eingabeaufforderung reagiert
+	 */
+	private void askForFlags() {
+		// Einlesen der Flags vom Standardparser
+		try {
+			graphic = parser.isGraphic();
+			debug = parser.isDebug();
+			replay = parser.isReplay();
+			offer = parser.isOffer();
+			standard = parser.isStandard();
+		} catch(ArgumentParserException exception) {
+			System.err.println("Die Flags konnten nicht eingelesen werden");
+		}
+		// Wiederholen bis gueltige Konfiguration eingegeben wurde
+		while(true) {
+			int modes = 0;
+			if(replay) {
+				modes++;
+			}
+			if(offer) {
+				modes++;
+			}
+			if(standard) {
+				modes++;
+			}
+			if(modes == 1) {
+				return;
+			}
+			// Setzen der Flags auf false fuer neue Eingabe
+			graphic = false;
+			debug = false;
+			replay = false;
+			offer = false;
+			standard = false;
+			// Einlesen einer neuen line
+			System.out.println("Bitte die gewuenschten Flags neu eingeben");
+			String line = "";
+			String[] flagArgs = {"default"};
+			line = input.nextLine();
+			flagArgs = line.split(" ");
+			try {
+				ArgumentParser flagParser = new ArgumentParser(flagArgs);
+				graphic = parser.isGraphic();
+				debug = parser.isDebug();
+				replay = parser.isReplay();
+				offer = parser.isOffer();
+				standard = parser.isStandard();
+			} catch(ArgumentParserException exception) {
+				System.err.println("Der Parameter size konnte nicht eingelesen werden");
+			}
+		}
+	}
+
+	/**
+	 * Diese Methode erfragt auf der Eingabe, die dieses Towerwarsspiel nutzt eine Eingabe des size-Parameters, wie oben beschrieben und speichert ihn in der Instanzvariable.
+	 * Auf Eingabefehler wird mit erneuter Eingabeaufforderung reagiert.
+	 */
+	private void askForSize() {
+		// Einlesen des Parameters size vom Standardparser
+		try {
+			size = parser.getSize();
+		} catch(ArgumentParserException exception) {
+			System.err.println("Der Parameter size wurde nicht gesetzt");
+		}
+		// Eingabeaufforderung, bis eine gueltige Eingabe vorliegt
+		while(true) {
+			if(size != null && size >= 4 && size <= 26) {
+				return;
+			}
+			// Einlesen einer neuen line
+			System.out.println("Bitte den Parameter size mit einem Wert von 4 bis 26 eingeben");
+			String line = "";
+			String[] sizeArgs = {"default"};
+			line = input.nextLine();
+			sizeArgs = line.split(" ");
+			// Parsen mit einem neuen Parser
+			try {
+				ArgumentParser sizeParser = new ArgumentParser(sizeArgs);
+				int size = sizeParser.getSize();
+			} catch(ArgumentParserException e) {
+				System.err.println("Der Parameter size konnte nicht eingelesen werden");
+			}
+		}
+	}
+
+	/**
+	 * Diese Methode erfragt auf der Eingabe, die dieses Towerwarsspiel nutzt eine Eingabe des red-Parameters, wie oben beschrieben und speichert den roten Spieler in den Instanzvariablen
+	 * Auf Eingabefehler wird mit erneuter Eingabeaufforderung reagiert.
+	 */
+	private void askForRed() {
+		PlayerType red = null;
+		try {
+			red = parser.getRed();
+		} catch(ArgumentParserException exception) {
+			System.err.println("Der Parameter red wurde nicht gesetzt");
+		}
+		// Eingabeaufforderung, bis eine gueltige Eingabe vorliegt
+		while(true) {
+			if(red != null) {
+				redPlayer = getTypedPlayer(red);
+				if(redPlayer != null) {
+					return;
+				}
+			}
+			// Einlesen einer neuen line
+			System.out.println("Bitte den Parameter red mit einem Spielertypen eingeben");
+			String line = "";
+			String[] redArgs = {"default"};
+			line = input.nextLine();
+			redArgs = line.split(" ");
+			// Parsen mit einem neuen Parser
+			try {
+				ArgumentParser redParser = new ArgumentParser(redArgs);
+				red = redParser.getRed();
+			} catch(ArgumentParserException e) {
+				System.err.println("Der Parameter red konnte nicht eingelesen werden");
+			}
+		}
+	}
+
+	/**
+	 * Diese Methode erfragt auf der Eingabe, die dieses Towerwarsspiel nutzt eine Eingabe des blue-Parameters, wie oben beschrieben und speichert den blauen Spieler in den Instanzvariablen
+	 * Auf Eingabefehler wird mit erneuter Eingabeaufforderung reagiert.
+	 */
+	private void askForBlue() {
+		PlayerType blue = null;
+		try {
+			blue = parser.getBlue();
+		} catch(ArgumentParserException exception) {
+			System.err.println("Der Parameter blue wurde nicht gesetzt");
+		}
+		// Eingabeaufforderung, bis eine gueltige Eingabe vorliegt
+		while(true) {
+			if(blue != null) {
+				bluePlayer = getTypedPlayer(blue);
+				if(bluePlayer != null) {
+					return;
+				}
+			}
+			// Einlesen einer neuen line
+			System.out.println("Bitte den Parameter blue mit einem Spielertypen eingeben");
+			String line = "";
+			String[] blueArgs = {"default"};
+			line = input.nextLine();
+			blueArgs = line.split(" ");
+			// Parsen mit einem neuen Parser
+			try {
+				ArgumentParser blueParser = new ArgumentParser(blueArgs);
+				blue = blueParser.getBlue();
+			} catch(ArgumentParserException e) {
+				System.err.println("Der Parameter blue konnte nicht eingelesen werden");
+			}
+		}
+	}
+
+	/**
+	 * Diese Methode erfragt auf der Eingabe, die dieses Towerwarsspiel nutzt eine Eingabe des log-Parameters und stellt sicher, dass das Logfile existiert und setzt es in den Instanzvariablen
+	 * Auf Eingabefehler wird mit erneuter Eingabeaufforderung reagiert.
+	 */
+	private void askForLog() {
+		try {
+			log = new File(parser.getLog());
+		} catch(ArgumentParserException exception) {
+			System.err.println("Der Parameter log wurde nicht gesetzt");
+		}
+		// Eingabeaufforderung, bis die log-Datei gefunden wurde
+		while(true) {
+			if(log.exists()) {
+
+			}
+		}
+	}
+	
+	/**
+	 * Diese Methode startet den Spieldurchlauf dieses TowerWars-Objekts, setzt die Flags und ruft eine Methode auf, die den entsprechenden Modus durchfuehrt
+	 */
+	public void initiate() {
+		askForFlags();
+		if(replay) {
+			replayLog();
+		}
+		if(offer) {
+			offerPlayer();
+		}
+		if(standard) {
+			playGame();
+		}
+	}
+
+	/**
+	 * Diese Methode dient dazu ein in einem Log gespeichertes Spiel nachzustellen
+	 */
+	public void replayLog() {
+		
+	}
+
+	/**
+	 * Diese Methode dient dazu einen Netzwerkspieler anzubieten
+	 */
+	public void offerPlayer() {
+
+	}
+
+	/**
+	 * Diese Methode dient dazu einen normalen Spieldurchlauf zu starten
+	 */
+	public void playGame() {
+		// Sicherstellen, das der BufferedReader und das Logfile geschlossen werden
+		try {
+			// Initialisieren des Spielfeldes
+			askForSize();
+			board = new BasicBoard(size);
+			// Initialisieren des EinAusgabe-Objektes falls noetig
+			if(debug || graphic) {
+				einAusgabe = new EinAusgabe(board, input);
+			}
+			// Initialisieren der Spieler
+			askForRed();
+			askForBlue();
+			// Setzen des Delay
+			try {
+				delay = parser.getDelay();
+			} catch(ArgumentParserException exception) {}
+			// Erstellen der Logdatei
+			Random rng = new Random();
+			String logName, logFilename = "default";
+			do {
+				// generieren eines Namen aus zehn zufaelligen Kleinbuchstaben fuer die Logdatei
+				logName = "";
+				for(int i = 0; i < 10; i++) {
+					logName += (char)(97 + rng.nextInt(26));
+				}
+				// Testen, wo der Ordner log sich befindet, else if, damit das logFile nicht in einen log-Ordner ausserhalb von trunk geschoben werden kann
+				File logDirBuild = new File("../log"), logDirJar = new File("log");
+				if(logDirJar.exists()) {
+					logFilename = "log/" + logName;
+				} else if(logDirBuild.exists()) {
+					logFilename = "../log/" + logName;
+				}
+				logFile = new File(logFilename);
+			// Sicherstellen, dass die Datei noch nicht existiert
+			} while(logFile.exists());
+			// Gibt an ob der Spieldurchlauf in einem Log gespeichert wird
+			boolean isLogging = true;
+			try {
+				// Erstellen der Logdatei, kann sie nicht erstellt werden wird isLogging auf false gesetzt
+				logFile.createNewFile();
+			} catch(IOException exception) {
+				System.err.println("Die Logdatei kann nicht erstellt werden(IOException)");
+				isLogging = false;
+			} catch(SecurityException exception) {
+				System.err.println("Die Logdatei kann nicht erstellt werden(SecurityException)");
+				isLogging = false;
+			}
+			if(isLogging) {
+				// Ausgeben des Namens der Logdatei, falls sie gespeichert wird
+				System.out.println("Der Name des Logs dieses Spiels ist: " + logName);
+				// Initialisierung des Writers
+				try {
+					writer = new PrintWriter(new BufferedWriter(new FileWriter(logFile)));
+				} catch(IOException exception) {
+					System.err.println("In die Logdatei kann nicht geschrieben werden");
+					isLogging = false;
+					logFile.delete();
+				}
+			}
+			// Aufruf von init auf beiden Spielern, Verteilen der Rollen
+			try {
+				redPlayer.init(size, PlayerColor.RED);
+				bluePlayer.init(size, PlayerColor.BLUE);
+			} catch(RemoteException exception) {
+				System.err.println("Kommunikation mit dem Netzwerkspieler fehlgeschlagen");
+				System.exit(-1);
+			} catch(Exception exception) {
+				exception.printStackTrace();
+				System.err.println("Beim Initialisieren der Spieler ist ein Fehler aufgetreten");
+				System.exit(-1);
+			}
+			// Speichern der Spielfeldgroesse in der Logdatei
+			if(isLogging) {
+				writer.println(size);
+				writer.flush();
+			}
+			if(debug) {
+				System.out.println("\033[2J");
+				System.out.println(einAusgabe);
+			}
+			if(graphic) {
+				// Grafikausgabe ----------------------------------------------------------
+			}
+			// Solange wiederholen bis ein Spieler das Spiel gewonnen hat
+			while(board.getStatus() == Status.OK) {
+				// Erkennen des Spielers der an der Reihe ist und des Spielers der warten muss
+				Player current, idling;
+				if(board.getCurrentPlayer() == PlayerColor.RED) {
+					current = redPlayer;
+					idling = bluePlayer;
+				} else {
+					current = bluePlayer;
+					idling = redPlayer;
+				}
+				// Anfordern eines Zuges vom aktuellen Spieler
+				Move nextMove = null;
+				try {
+					nextMove = current.request();
+				} catch(RemoteException exception) {
+					System.err.println("Kommunikation mit dem Netzwerkspieler fehlgeschlagen");
+					System.exit(-1);
+				} catch(Exception exception) {
+					exception.printStackTrace();
+					System.err.println("Das Anfragen eines Zuges bei Spieler " + current + " ist fehlgeschlagen");
+					System.exit(-1);
+				}
+				// Ausfuehren des uebergebenen Zuges
+				board.executeMove(nextMove);
+				if(debug) {
+					System.out.println("\033[2J");
+					System.out.println(einAusgabe);
+				}
+				if(graphic) {
+					// Grafikausgabe ------------------------------------------------
+				}
+				// Updaten des Logs
+				if(isLogging) {
+					writer.println(nextMove);
+					writer.flush();
+				}
+				// Pruefen auf Synchronitaet mit dem aktiven Spieler
+				try {
+					current.confirm(board.getStatus());
+				} catch(RemoteException exception) {
+					System.err.println("Kommunikation mit dem Netzwerkspieler fehlgeschlagen");
+					System.exit(-1);
+				} catch(Exception exception) {
+					exception.printStackTrace();
+					System.err.println("Der Status des Spielers " + current + " stimmt nicht ueberein nach confirm");
+					System.exit(-1);
+				}
+				// Updaten des anderen Spielers
+				try {
+					idling.update(nextMove, board.getStatus());
+				} catch(RemoteException exception) {
+					System.err.println("Kommunikation mit dem Netzwerkspieler fehlgeschlagen");
+					System.exit(-1);
+				} catch(Exception exception) {
+					exception.printStackTrace();
+					System.err.println("Der Status des Spielers " + current + " stimmt nicht ueberein nach update");
+					System.exit(-1);
+				}
+				// Abwarten des eingestellten Delays
+				try {
+					Thread.sleep(delay);
+				} catch(InterruptedException exception) {
+					exception.printStackTrace();
+					System.exit(-2);
+				}
+			}
+			// Status des Spielfeldes ist nicht mehr OK, wenn ILLEGAL wird beendet
+			if(board.getStatus() == Status.ILLEGAL) {
+				System.err.println("Ein nicht legaler Zug wurde ausgefuehrt");			
+				System.exit(-1);
+			}
+			// Falls Rot gewonnen hat
+			if(board.getStatus() == Status.RED_WIN) {
+				System.out.println("Der rote Spieler hat gewonnen");
+				return;
+			}
+			// Falls Blau gewonnen hat
+			System.out.println("Der blaue Spieler hat gewonnen");
+		} finally {
+			if(input != null) {
+				input.close();
+			}
+			if(writer != null) {
+				writer.close();
+			}
+			if(logFile != null) {
+				System.out.println("Der Name des Logs ist" + logFile);
+			}
+		}
+	}
+
+	/**
+	 * Diese Methode dient zum Starten eines neuen Spieldurchlaufs von Towerwars. Es wird ein Towerwars-Objekt erzeugt und die uebergebenen Argumente werden interpretiert.
+	 * Erklaerung der Flags und Parameter ist in der Klassenbeschreibung
+	 * @param args = Flags und Parameter, die für diesen Spieldurchlauf gesetzt werden sollen
+	 */
+	public static void main(String[] args) {
+		TowerWars game = new TowerWars(System.in, args);
+		game.initiate();
+	}
+}

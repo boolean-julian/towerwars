@@ -1,0 +1,21 @@
+package towerwarspp.Spieler;
+import java.util.Random;
+import java.util.LinkedList;
+import towerwarspp.preset.*;
+
+
+public class RandomCPUSpieler extends Spieler {
+	private Random random;
+	public RandomCPUSpieler(){
+		super();
+		random = new Random();
+	}
+	/**	Ermittelt einen nächsten zufälligen Move
+	@return nächster Move
+	*/
+	@Override
+	protected Move getNextMove(){
+		LinkedList<Move> possibleMoves = board.getLegalMoves(color); 	
+		return possibleMoves.get(random.nextInt(possibleMoves.size()));
+	}
+}

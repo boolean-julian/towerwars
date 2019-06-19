@@ -1,0 +1,21 @@
+package
+
+import
+
+/**
+ *	Kommentar zur Klasse
+ *	Kommentar zur Klasse
+ *	Kommentar zur Klasse
+ */
+class ...
+
+/** einzeilger Kommentar */
+Instanzvariablen
+
+Konstruktoren
+
+Getter
+
+Setter
+
+Hilfsmethoden und Methoden (erst Hilfsmethode, dann Methoden, die die Hilfsmethode verwenden usw.)

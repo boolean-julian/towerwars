@@ -1,0 +1,77 @@
+package towerwarspp.gfx;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import towerwarspp.preset.*;
+import towerwarspp.board.*;
+
+/** Klasse zur Darstellung des Spielbretts
+ *	@author Julian L&uuml;ken
+ */
+public class TowerWarsGUI {
+	/** Klassenvariable f&uuml;r den Abstand des oberen Fensterrands zur Spielfl&auml;che in px */
+	private final static int PADDINGTOP		= 15;
+	/** Klassenvariable f&uuml;r den Abstand des linken Fensterrands zur Spielfl&auml;che in px */
+	private final static int PADDINGLEFT	= 15;
+	
+	/** darzustellendes Board */
+	public static BasicBoard board = null;
+	
+	/** Radius der Sechsecke */
+	public static int hexaSize = 30;
+	
+	/** Raster aus HexagonButtons bildet das Spielfeld */
+	protected static HexagonButton[][] buttons;
+	
+	/** Fenster */
+	private static JFrame frame;
+	/** Panel f&uuml;r das Spielfeld */
+	private static JPanel panel = new JPanel();
+	
+	/** Methode, die das Fenster initialisiert und das Spielfeld darstellt */
+	public static void createAndShowGUI() {
+		frame = new JFrame("Testklasse fuer Hexagon");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.add(panel);
+		
+		update();
+		
+		frame.setSize(board.getSize()*hexaSize*3, board.getSize()*hexaSize*2);
+		frame.setVisible(true);
+	}
+	
+	/** Methode, die das JPanel, in dem das Spielfeld liegt, aktualisiert */
+	public static void update() {
+		frame.remove(panel);
+		panel = new JPanel();
+		panel.setLayout(null);
+		
+		Token[][] tokens = board.getTokens();
+		buttons = new HexagonButton[board.getSize()][board.getSize()];
+		
+		int rowPadding = 0;
+		for (int i = 0; i < board.getSize(); i++) {
+			for (int j = 0; j < board.getSize(); j++) {
+				buttons[i][j] = new HexagonButton(new Hexagon(hexaSize),tokens[i][j]);
+				buttons[i][j].setBounds(i*2*hexaSize+j*hexaSize+PADDINGLEFT, (j*2*hexaSize-j*hexaSize/4)+PADDINGTOP, 2*hexaSize, 2*hexaSize);
+				
+				buttons[i][j].addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
+						// Anweisungen fuer die Buttons...
+						for (int i = 0; i < (TowerWarsGUI.board).getSize(); i++) {
+							for (int j = 0; j < (TowerWarsGUI.board).getSize(); j++)  {
+								if (e.getSource() == TowerWarsGUI.buttons[i][j]) {
+									System.out.println(new Position(i+1,j+1));
+								}
+							}
+						}
+					}	
+				});
+				
+				panel.add(buttons[i][j]);
+			}
+		}
+		frame.add(panel);
+	}
+}

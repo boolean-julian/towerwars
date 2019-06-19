@@ -1,0 +1,163 @@
+package towerwarspp.Spieler;
+import towerwarspp.preset.*;
+import towerwarspp.board.*;
+import java.rmi.RemoteException;
+import towerwarspp.Exceptions.StatusException;
+public class Spieler implements Player {
+
+	
+	//Parameter:
+	protected ExtendedBoard board;
+	protected int currentStatus = -1; 
+	//Nach initialisierung: 0 je nach Spielerfarbe entsprechen request, confirm, update 0, 1, 2
+	//Nach Mathodenaufruf wird um 1 erhöht und %3 gerechnet. Zweck: checken, ob Methodenaufrufe in der korrekten Reihenfolge stattfinden, sonst Exception
+	protected PlayerColor color;
+	//Spielerfarbe
+	protected Move prevmove;
+	//Speichert den letzten Zug
+	
+	//Konstruktor:
+	public Spieler(){}
+	
+	
+	//Methoden:
+	
+	//Notiz:
+	//Methoden der Player-Schnittstelle müssen in folgender Reihenfolge aufgerufen werden:
+	//Reihenfolge Spieler ROT: init {request, confirm, update}* bis Spielende
+	//Reihenfolge Spieler BLAU: init {update, request, confirm}* bis Spielende	
+	
+	//request------------------------------------------------------------------------------
+	
+	/** Fordert vom Spieler einen Zug an
+	@return Nächster Zug des Spielers
+	*/
+	
+    public Move request() throws Exception, RemoteException{
+		//Checke, ob die zuletzt aufgerufene Methode update bzw init war
+		if(currentStatus%3 != 0)
+			selectException("request");
+		
+		currentStatus++;
+		//Damit crrentstatus nicht zu groß werden kann, wird es regelmäßig normiert
+		currentStatus = currentStatus % 3;		
+		//Fordert vom Spieler einen zug an
+		do {
+			prevmove = getNextMove();
+		}
+		//Fordert einen neuen Zug an, falls der ermittelte Zug ungültig ist
+		while (!board.isLegal(prevmove));
+		return prevmove;
+
+	}
+	
+	//confirm--------------------------------------------------------------------------------
+	
+	/** Prüft, ob der letzte Zug ausgeführt werden konnte und führt ihn danch auf dem eigenen 		Board aus
+	@param boardStatus Status des Spielbretts, nach dem ausführen des Zuges
+	*/
+    public void confirm(Status boardStatus) throws Exception, RemoteException{
+		//Checke, ob die zuletzt aufgerufene Methode request war
+		if(currentStatus%3 != 1)
+			selectException("confirm");
+		currentStatus++;
+		//Führt auf eigenem Board den letzten Move aus
+		board.executeMove(prevmove);
+		//Checkt, ob der Status vom eigenen Board synchron zum Status vom "Server" ist
+		if (boardStatus != board.getStatus())
+			throw new Exception("Spielereigenes Board von Spieler"+color+"ist asynchron"); // Ich habe hier ein + im Text der Exception entfernt, da die Klasse nicht kompiliert hat. Marcel
+	}
+	
+	//update--------------------------------------------------------------------
+	
+	/**	aktualisiert das lokale Board nach dem gegnerischen Zug
+	@param opponentMove Zug des Gegners
+	@param boardStatus Status des Boards nach Ausführen des gegnerischen Zuges
+	*/
+    public void update(Move opponentMove, Status boardStatus) throws Exception, RemoteException{
+		//Checke, ob die zuletzt aufgerufene Methode confirm bzw init war
+		if(currentStatus%3 != 2)
+			selectException("update");
+		currentStatus++;
+		
+		//Updatet eigenes Board, indem der gegnerische Zug ausgeführt wird
+		board.executeMove(opponentMove);
+		if (boardStatus != board.getStatus())
+			throw new Exception("Spielereigenes Board ist asynchron");
+	}
+	
+	//init------------------------------------------------------------------------------
+	
+	/** initialisert den Spieler, indem das lokale Board erstellt wird und die Spielerfarbe festgelegt wird
+	kann jederzeit aufgerufen werden
+	@param size Größe des Boards
+	@param color Spielerfarbeddddddddddddddddd
+	*/
+    public void init(int size, PlayerColor color) throws Exception, RemoteException{
+	   	//Status <- 0, falls == null, um mitzuteilen, dass mind. 1 mal initialisiert wurde
+   		if (color == PlayerColor.RED)
+   			currentStatus = 0;
+   		else currentStatus = 2;
+    	//initialisert eigenes Board und Spielerfarbe
+    	board = new ExtendedBoard(size);
+    	this.color = color;
+	}
+	   
+	/** Hilfsmethode zum ermitteln des nächsten Spielzuges
+	@return nächster Spielzug
+	*/
+	protected Move getNextMove(){
+		return null; //deliver();  deliver Methode existiert noch nicht! aus Compiliergründen auskommentiert
+	}
+	
+	/** Hilfsmethode zum Werfen einer aussagekräftigen Exception
+	@param calledFunctionName Name der aufrufenden Funktion
+	*/
+	protected void selectException(String calledFunctionName) throws StatusException{
+	
+			//init nicht aufgerufen wurde	
+			if(currentStatus == -1)
+				throw new StatusException("Falsche Aufrufreihenfolge: Die Funktion " + calledFunctionName + " wurde aufgerufen, ohne vorher zu initialisieren");
+		
+		switch(currentStatus%3){
+			
+			//request wurde als letztes aufgerufen
+			case 0: throw new StatusException("Falsche Aufrufreihenfolge: Die Funktion " + calledFunctionName + " wurde aufgerufen, obwohl zuletzt request aufgerufen wurde");
+			//confirm wurde als letzes aufgerufen
+			case 1: throw new StatusException("Falsche Aufrufreihenfolge: Die Funktion " + calledFunctionName + " wurde aufgerufen, obwohl zuletzt confirm aufgerufen wurde");
+			//update wurde als letzes aufgerufen
+			case 2: throw new StatusException("Falsche Aufrufreihenfolge: Die Funktion " + calledFunctionName + " wurde aufgerufen, obwohl zuletzt update aufgerufen wurde");
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

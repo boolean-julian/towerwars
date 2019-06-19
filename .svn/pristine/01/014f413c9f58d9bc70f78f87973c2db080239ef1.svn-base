@@ -1,0 +1,7 @@
+Spieler:
+	- Exception überarbeiten
+
+RandomKISpieler:
+	- getPossibleMoves() fehlt beim ExtendedBoard
+		- getpossiblemoves anpassen, wenn der rückgabetyp feststeht
+		

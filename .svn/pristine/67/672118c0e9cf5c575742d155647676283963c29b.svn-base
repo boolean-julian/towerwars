@@ -1,0 +1,6 @@
+package towerwarspp.io;
+import towerwarspp.preset.Move;
+
+public interface RequestableOut {
+	Move deliverOut();
+}

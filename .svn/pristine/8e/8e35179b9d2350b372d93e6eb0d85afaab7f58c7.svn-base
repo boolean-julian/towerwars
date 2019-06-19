@@ -1,0 +1,73 @@
+package towerwarspp.board;
+
+/**
+ * Diese Klasseerweitert Token und implementiert einen Turm aus Towerwars
+ */
+protected class Tower extends Token {
+    // Instanzvariablen
+    /**
+     * @param Die Hoehe dieses Turms
+     */
+	private int height;
+    /**
+     * @param Gibt an ob dieser Turm blockiert wird
+     */
+	private boolean blocked;
+
+    // Konstruktoren
+	/**
+	 * Parameterloser Standardkonstruktor
+	 */
+	protected Tower() {}
+    /**
+     * Konstruktor mit uebergebener Zelle und Farbe
+     * Die Default-Werte sind hoehe = 1, blocked = false und type = TokenType.TOWER
+     * @param position = Position an der sich dieses Token befindet
+     * @param color = Farbe dieses Tokens
+	 * @param board = Board auf dem sich dieser Turm befindet
+     */
+    protected Tower(Position position, Playercolor color, BasicBoard board) {
+        super(position, color, TokenType.TOWER, board);
+        height = 1;
+        blocked = false;
+    }
+
+    // Getter/Setter
+	/**
+     * Getter fuer height
+     * @return Hoehe dieses Turmes
+     */
+    protected int getHeight() {return height;}
+    /**
+     * Getter fuer blocked
+     * @return true, wenn dieser Turm blockiert ist, false sonst
+     */
+    protected boolean isBlocked() {return blocked;}
+    /**
+     * Setter fuer height
+     * @param h = neue Hoehe dieses Turms
+     */
+    protected void setHeight(int h) {
+        if(h <= 0 || h > (getCell().getBoard().getSize() / 3)) {
+            throw new IllegalArgumentException("Ein Turm kann auf diesem Spielfeld nicht die Hoehe " + h + " haben");
+        }
+        height = h;
+    }
+    /**
+     * Setter fuer blocked
+     * @param b = Gibt an ob der Turm auf blockiert gesetzt wird oder auf nicht blockiert
+     */
+    protected void setBlocked(boolean b) {blocked = b;}
+
+	// Methoden
+	/**
+	 * Updatemethode fuer die Bewegungsreichweite dieses Tower
+	 */
+	protected int updateRange() {
+		if(blocked == true) {
+			range = 0;
+		} else {
+			range = 1;
+		}
+	}
+}

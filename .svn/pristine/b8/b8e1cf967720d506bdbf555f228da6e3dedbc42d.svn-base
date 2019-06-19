@@ -1,0 +1,112 @@
+package towerwarspp.gfx;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import towerwarspp.preset.*;
+import towerwarspp.board.*;
+
+/** Klasse zur Darstellung des Spielbretts
+ *	@author Julian L&uuml;ken
+ */
+public class TowerWarsGUI implements Viewer, Requestable{
+	/** darzustellendes Board */
+	private BasicBoard board;
+	
+	/** Radius der Sechsecke */
+	private int hexaSize;
+	
+	/** Raster aus HexagonButtons bildet das Spielfeld */
+	private HexagonButton[][] buttons;
+	
+	/** Fenster */
+	private JFrame frame;
+	
+	/** Panel f&uuml;r das Spielfeld */
+	private JPanel panel = new JPanel();
+	
+	// Konstruktoren
+	public TowerWarsGUI(BasicBoard board) {
+		this.board = board;
+		this.hexaSize = 30;
+	}
+	
+	public TowerWarsGUI(BasicBoard board, int hexaSize) {
+		this.board = board;
+		this.hexaSize = hexaSize;
+	}
+	
+	
+	// getter, setter
+	public BasicBoard getBoard() {return board;}
+	public int getHexaSize() {return hexaSize;}
+	public HexagonButton[][] getButtons() {return buttons;}
+	
+	
+	/** Methode, die das Fenster initialisiert und das Spielfeld darstellt */
+	public void createAndShowGUI() {
+		frame = new JFrame("Testklasse fuer Hexagon");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.add(panel);
+		
+		update();
+		
+		frame.setSize(board.getSize()*hexaSize*3, board.getSize()*hexaSize*2);
+		frame.setVisible(true);
+	}
+	
+	/** Methode, die das JPanel, in dem das Spielfeld liegt, aktualisiert */
+	public void update() {
+		int padding = hexaSize / 2;
+		
+		frame.remove(panel);
+		panel = new JPanel();
+		panel.setLayout(null);
+		
+		Token[][] tokens = board.getTokens();
+		buttons = new HexagonButton[board.getSize()][board.getSize()];
+		
+		int rowPadding = 0;
+		for (int i = 0; i < board.getSize(); i++) {
+			for (int j = 0; j < board.getSize(); j++) {
+				buttons[i][j] = new HexagonButton(new Hexagon(hexaSize),tokens[i][j]);
+				buttons[i][j].setBounds(i*2*hexaSize+j*hexaSize+padding, (j*2*hexaSize-j*hexaSize/4)+padding, 2*hexaSize, 2*hexaSize);
+				
+				buttons[i][j].addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
+						for (int i = 0; i < getBoard().getSize(); i++) {
+							for (int j = 0; j < getBoard().getSize(); j++) {
+								if (e.getSource() == buttons[i][j]) {
+									System.out.println(i + " " + j);
+								}
+							}
+						}
+					}	
+				});
+				
+				panel.add(buttons[i][j]);
+			}
+		}
+		frame.add(panel);
+	}
+	
+	@Override
+	public Status getStatus() {
+		return board.getStatus();
+	}
+	
+	@Override
+	public int getTurn() {
+		return board.getTurn();
+	}
+	
+	@Override
+	public int getSize() {
+		return board.getSize();
+	}
+	
+	@Override
+	public Move deliver() {
+		return null;
+	}
+}

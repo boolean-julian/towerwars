@@ -1,0 +1,62 @@
+package towerwarspp.gfx;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import towerwarspp.preset.*;
+import towerwarspp.board.*;
+
+public class TowerWarsGUI {
+	private final static int PADDINGTOP		= 5;
+	private final static int PADDINGLEFT	= 5;
+	
+	public static BasicBoard board = null;
+	public static int hexaSize = 30;
+	
+	protected static HexagonButton[][] buttons;
+	
+	private static JFrame frame;
+	private static JPanel panel = new JPanel();
+	
+	public static void createAndShowGUI() {
+		frame = new JFrame("Testklasse fuer Hexagon");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.add(panel);
+		update();
+	}
+	
+	public static void update() {
+		frame.remove(panel);
+		panel = new JPanel();
+		panel.setLayout(null);
+		
+		Token[][] tokens = board.getTokens();
+		buttons = new HexagonButton[board.getSize()][board.getSize()];
+		
+		int rowPadding = 0;
+		for (int i = 0; i < board.getSize(); i++) {
+			for (int j = 0; j < board.getSize(); j++) {
+				buttons[i][j] = new HexagonButton(new Hexagon(hexaSize),tokens[i][j]);
+				buttons[i][j].setBounds(i*2*hexaSize+j*hexaSize+PADDINGLEFT, (j*2*hexaSize-j*hexaSize/4)+PADDINGTOP, 2*hexaSize, 2*hexaSize);
+				
+				buttons[i][j].addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
+						for (int i = 0; i < (TowerWarsGUI.board).getSize(); i++) {
+							for (int j = 0; j < (TowerWarsGUI.board).getSize(); j++) {
+								if (TowerWarsGUI.buttons[i][j] == e.getSource()) {
+									System.out.println(i + " " + j);
+								}
+							}
+						}
+					}	
+				});
+				
+				panel.add(buttons[i][j]);
+			}
+		}
+		frame.add(panel);
+		
+		frame.setSize(board.getSize()*hexaSize*3, board.getSize()*hexaSize*2);
+		frame.setVisible(true);
+	}
+}

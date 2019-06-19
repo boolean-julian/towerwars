@@ -1,0 +1,53 @@
+package towerwarspp.board;
+
+import towerwarspp.preset.*;
+
+public class BasicBoard implements Viewable{
+	// Instanzvariablen
+	private int size;
+	private Cell[][] roster;
+	private PlayerColor currentPlayer;
+	private Status status;
+
+	// Konstruktor
+	public BasicBoard(int size) {
+		currentPlayer = PlayerColor.RED;
+		status = Status.OK;
+
+		if (size < 4 || size > 26) {
+			throw new IllegalArgumentException("Spielfeldgroesse (" + size + ") muss zwischen 4 und 26 liegen");
+		}
+		this.size = size;
+
+		roster = new Cell[size][size];
+		for (int i = 0; i < size; i++) {
+			for (int j = 0; j < size; j++) {
+				letter = i + 1;
+				number = j + 1;
+				roster[i][j] = new Cell(new Position(letter,number), this);
+				if(letter + number <= 2 + size / 2) {
+					Token t = new Token(roster[i][j], PlayerColor.RED, TokenType.PAWN);
+				}
+				if(letter + number >= 2*size - size / 2) {
+					Token t = new Token(roster[i][j], PlayerColor.BLUE, TokenType.PAWN);
+				}
+			}
+		}
+		roster[0][0].getToken().setType(TokenType.BASE);
+		roster[size-1][size-1].getToken().setType(TokenType.BASE);
+	}
+
+	// Set/Get
+	public int getSize()		{return size;}
+	public Cell[][] getRoster() {return roster;}
+	public getCurrentPlayer()	{return currentPlayer;}
+	public getStatus()			{return status;}
+
+	public void setCurrentPlayer(PlayerColor color) {currentPlayer = color;}
+	public void setStatus(Status s) {status = s;}
+
+	// Methoden
+	public boolean executeMove(Move move) {
+		// Testen ob legal, Ausfuehren, Statusupdate
+	}
+}

@@ -1,0 +1,5 @@
+Instanzvariable currentPlayer in SavedMove hinzugefügt
+protected PlayerColor getCurrentPlayer() in SavedMove hinzugefügt
+BasicBoard: protected LinkedList<Move> legalMoves(boolean all) hinzugefügt
+			public boolean hasLegalMove() hinzugefügt
+ExtendedBoard: public LinkedList<Move> getLegalMoves() verändert

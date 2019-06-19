@@ -1,0 +1,22 @@
+package towerwarspp.io;
+import towerwarspp.preset.*;
+import java.util.Scanner;
+import towerwarspp.board.*;
+
+public class Test {
+	public static void main(String[] args) {	
+		System.out.println("\033[2J");
+		BasicBoard board = new BasicBoard(Integer.parseInt(args[0]));
+		EinAusgabe io = new EinAusgabe(board, new Scanner(System.in));
+		System.out.println(io);
+		while (board.getStatus() == Status.OK) {
+			System.out.println("Spieler: " + board.getCurrentPlayer());
+			Move move = io.deliver();
+			System.out.println("\033[2J");
+			board.executeMove(move);
+			System.out.println(io);
+		}
+		System.out.println("You are a WinRAR, " + board.getCurrentPlayer());
+	}
+	
+}

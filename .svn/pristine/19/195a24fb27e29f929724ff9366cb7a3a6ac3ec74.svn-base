@@ -1,0 +1,56 @@
+package towerwarspp.board;
+
+/**
+ * Diese Klasseerweitert Token und implementiert einen Turm aus Towerwars
+ */
+protected class Tower extends Token {
+    // Instanzvariablen
+    /**
+     * @param Die Hoehe dieses Turms
+     */
+	private int height;
+    /**
+     * @param Gibt an ob dieser Turm blockiert wird
+     */
+	private boolean blocked;
+
+    // Konstruktoren
+    /**
+     * Konstruktor mit uebergebener Zelle und Farbe
+     * Die Default-Werte sind hoehe = 1, blocked = false und type = TokenType.TOWER
+     * @param c = Zelle in der sich dieser Turm befinset
+     * @param col = Farbe dieses Turms
+     */
+    protected Tower(Cell c, Playercolor col) {
+        super(c, col, TokenType.TOWER);
+        height = 1;
+        blocked = false;
+    }
+
+    // Getter/Setter
+	/**
+     * Getter fuer height
+     * @return Hoehe dieses Turmes
+     */
+    protected int getHeight() {return height;}
+    /**
+     * Getter fuer blocked
+     * @return true, wenn dieser Turm blockiert ist, false sonst
+     */
+    protected boolean isBlocked() {return blocked;}
+    /**
+     * Setter fuer height
+     * @param h = neue Hoehe dieses Turms
+     */
+    protected void setHeight(int h) {
+        if(h <= 0 || h > (getCell().getBoard().getSize() / 3)) {
+            throw new IllegalArgumentException("Ein Turm kann auf diesem Spielfeld nicht die Hoehe " + h + " haben");
+        }
+        height = h;
+    }
+    /**
+     * Setter fuer blocked
+     * @param b = Gibt an ob der Turm auf blockiert gesetzt wird oder auf nicht blockiert
+     */
+    protected void setBlocked(boolean b) {blocked = b;}
+}

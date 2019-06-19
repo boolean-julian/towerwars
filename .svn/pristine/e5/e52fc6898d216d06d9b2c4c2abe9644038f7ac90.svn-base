@@ -1,0 +1,8 @@
+package towerwarspp.board;
+
+protected class Tower extends Token {
+	private int height;
+	private boolean blocked;
+
+	K
+}

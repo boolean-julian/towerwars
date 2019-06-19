@@ -1,0 +1,5 @@
+package towerwarspp.board;
+
+protected enum TokenType {
+	BASE, TOWER, PAWN
+}

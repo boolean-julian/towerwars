@@ -1,0 +1,24 @@
+package towerwarspp.board;
+
+protected class Cell {
+	// Instanzvariablen
+	private Token token;
+	private Position position;
+	private BasicBoard board;
+
+	// Konstruktor
+	protected Cell(Position position, BasicBoard board) {
+		this.position = position;
+		this.board = board;
+	}
+
+	// Set/Get
+	protected Token getToken() {return token;}
+	protected Position getPosition() {return position;}
+	protected BasicBoard getBoard() {return board;}
+
+	protected void setToken(Token token) {this.token=token;}
+	protected void setPosition(Position position) {this.position=position;}
+	protected void setBoard(BasicBoard board) {this.board=board;}
+	
+}

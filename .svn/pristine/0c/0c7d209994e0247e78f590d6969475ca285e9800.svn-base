@@ -1,0 +1,193 @@
+package towerwarspp.board;
+
+import towerwarspp.preset.*;
+
+/**
+ * Diese Klasse bildet die grundlegene Implementation des Spielfeldes von Towerwars. Ein neues Spielfeld wird mit einer
+ * Groesse zwischen 4 und 26 und der Startverteilung der Spielsteine initialisiert. Auf seine Attribute kann mit Gettern
+ * zugegriffen werden und es stellt eine Methode bereit um zu pruefen ob ein Move legal ist und eine Methode, um einen
+ * Move auf dem Spielfeld auszufuehren.
+ * Die Schnittstelle Viewable wird implementiert um Ausgabe des Spielfeldes zu ermoeglichen
+ */
+public class BasicBoard implements Viewable{
+	// Instanzvariablen
+    /**
+     * @param size = Die Groesse (Anzahl der Felder pro Kante) des Spielfeldes
+     */
+	private int size;
+    /**
+     * @param roster = Das Raster der Zellen des Spielfeldes
+     */
+	private Cell[][] roster;
+    /**
+     * @param currentPlayer = Farbe des Spielers, der als naechstes an der Reihe ist
+     */
+	private PlayerColor currentPlayer;
+    /**
+     * @param status = Aktueller Status des Spielfeldes
+     */
+	private Status status;
+
+	// Konstruktoren
+    /**
+     * Konstruktor mit uebergebener Spielfeldgroesse, der das Spielfeld mit Startaufstellung initialisiert
+     * @param size = Spielfeldgroesse
+     */
+	public BasicBoard(int size) {
+		currentPlayer = PlayerColor.RED;
+		status = Status.OK;
+        if (size < 4 || size > 26) {
+			throw new IllegalArgumentException("Spielfeldgroesse (" + size + ") muss zwischen 4 und 26 liegen");
+		}
+		this.size = size;
+		roster = new Cell[size][size];
+		for (int i = 0; i < size; i++) {
+			for (int j = 0; j < size; j++) {
+				letter = i + 1;
+				number = j + 1;
+				roster[i][j] = new Cell(new Position(letter,number), this);
+				if(letter + number <= 2 + size / 2) {
+					Token t = new Token(roster[i][j], PlayerColor.RED, TokenType.PAWN);
+                    roster[i][j].setToken(t);
+				}
+				if(letter + number >= 2*size - size / 2) {
+					Token t = new Token(roster[i][j], PlayerColor.BLUE, TokenType.PAWN);
+                    roster[i][j].setToken(t);
+				}
+			}
+		}
+		roster[0][0].getToken().setType(TokenType.BASE);
+		roster[size-1][size-1].getToken().setType(TokenType.BASE);
+	}
+	
+	public BasicBoard() {}
+
+	// Setter/Getter
+    /**
+     * Getter fuer size
+     * @return Groesse dieses Spielfeldes
+     */
+	public int getSize()		{return size;}
+    /**
+     * Getter fuer roster
+     * @return Zellenraster dieses Spielfeldes
+     */
+	public Cell[][] getRoster() {return roster;}
+    /**
+     * Getter fuer currentPlayer
+     * @return Farbe des Spielers, der aktuell am Zug ist
+     */
+	public PlayerColor getCurrentPlayer()	{return currentPlayer;}
+    /**
+     * Getter fuer status
+     * @return Aktueller Status des Spielfelds
+     */
+	public Status getStatus()			{return status;}
+
+	// Methoden
+    /**
+     * Diese Methode gibt die Zelle zurueck, die sich im Raster an der uebergebenen Position befindet.
+     * Wenn die Position nicht innerhalb des Spielfeldes liegt wird eine *************** Eception geworfen
+     * @param p = Position, deren Zelle ermittelt werden soll
+     * @return Zelle, die sich an der uebergebenen Position befindet
+     */
+    public Cell findCell(Position p) {
+        if(p.getLetter() > size || p.getNumber() > size) {
+            throw new Exception("hier muss noch ne andere exception hin");
+        }
+        return roster[p.getLetter() - 1][ p.getNumber() - 1];
+    }
+
+    /**
+     * Die Methode prueft den Abstand von zwei Positionen, wobei der Abstand die minimale Anzahl der
+     * Schritte zu Nachbarfeldern ist, die benoetigt wird um von Position a zu Position b zu kommen
+     * @param a = Erste Position
+     * @param b = Zweite Position
+     * @return Abstand der beiden Positionen
+     */
+    public int getDistance(Position a, Position b) {
+        return (Math.abs(a.getLetter() - b.getLetter()) + Math.abs(a.getLetter() + a.getNumber() - b.getLetter() - b.getNumber()) + Math.abs(a.getNumber() - b.getNumber())) / 2;
+    }
+
+    /**
+     * Diese Methode testet ob der uebergebene Zug auf dem Brett aktuell legal ist oder nicht
+     * @param m = Zug, der auf Legalitaet geprueft werden soll
+     * @return true, wenn der Zug legal ist, false sonst
+     */
+    public boolean isLegal(Move m) {
+        if(m == null) {															// Aufgabe ist erlaubt
+            return true;
+        }
+        Position start = m.getStart(), end = m.getEnd();
+        Token act = start.findCell().getToken();
+        if(start.equals(end)) {                                                 // Zuege koennen nicht auf dem gleichen Feld starten und enden
+            return false;
+        }
+        if(act == null) {                                                       // Zuege koennen nicht auf einem leeren Feld starten
+            return false;
+        }
+        if(act.getColor() != currentPlayer) {                                   // Nur der Spieler, der an der Reihe ist darf Zuege ausfuehren
+            return false;
+        }
+        if(act.getType() == TokenType.BASE) {                                   // Die Basis kann nicht bewegt werden
+            return false;
+        }
+        if(act.getType() == TokenType.PAWN) {                                   // Das Token ist ein eigener Pawn
+            if(act.getRange() < getDistance(start, end)) {
+                return false;                                                   // Der Pawn hat nicht ausreichend Zugreichweite
+            }
+            Token t = end.findCell().getToken();                                // Ein Pawn kann sich auf leere Felder
+            if(t == null) {
+                return true;
+            }
+            if(t.getColor != currentPlayer) {
+                if(t.getType() == TokenType.TOWER && ((Tower)t).isBlocked() && getDistance(start, end) != 1) {
+                    return false;                                               // Zuege auf gegnerische Tokens sind moeglich, ausser Fernzuege auf blockierte Tuerme
+                }
+                return true;
+            }
+            if(t.getType == TokenType.BASE || (t.getType == TokenType.TOWER && (!((Tower)t).isBlocked()) && ((Tower)t).getHeight() == size / 3)) {
+                return false;                                                   // nur die eigene Basis und nicht blockierte Tuerme maximaler Hoehe blockieren Zuege auf eigene Token
+            }
+            return true;
+        }                                                                       // Das Token ist ein eigener Tower
+        if(getDistance(start, end) == 1) {
+            Token t = end.findCell().getToken();
+            if(t == null) {                                                     // Abbau auf leere Felder ist erlaubt
+                return true;
+            }
+            if(t.getColor() != currentPlayer) {                                 // Gegnerische Tokens blockieren den Abbau eines Turms
+                return false;
+            }
+            if(t.getType() == TokenType.BASE || (t.getType() == TokenType.TOWER && ((Tower)t).getHeight() == size / 3)) {
+                return false;                                                   // Die eigene Basis und Tuerme maximaler Hoehe blockieren den Abbeu des Turms
+            }
+            return true;                                                        // sonst ist Abbau erlaubt
+        }
+        return false;                                                           // Die Zuege von Tuermen koennen nur Weite 1 haben
+    }
+
+    /**
+     * Diese Methode fuehrt den uebergebenen Zug aus, sofern dieser legal ist und updated den Status des Spielfeldes
+     * Ein null-Zug wird als Aufgabe gewertet.
+     * @param m = auszufuehrender Zug
+     */
+    // Beachten blockierte Tuerme *******************************************************************************************
+	public void executeMove(Move m) {
+		if(!(isLegal(m))) {                                                     // Falls der Move nicht legal ist, wird der Status auf illegal gesetzt
+            status = Status.ILLEGAL;
+            return;
+        }
+        if(m == null) {                                                         // Wenn ein Spieler aufgibt, dann gewinnt der andere
+            if(currentPlayer == PlayerColor.RED) {
+                currentPlayer = PlayerColor.BLUE;
+                status = Status.BLUE_WIN;
+            } else {
+                currentPlayer = PlayerColor.RED;
+                status = Status.RED_WIN;
+            }
+            return;
+        }
+
+	}
+}

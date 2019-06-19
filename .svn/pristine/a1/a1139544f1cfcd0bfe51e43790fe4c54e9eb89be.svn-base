@@ -1,0 +1,39 @@
+package towerwarspp.gfx;
+
+import javax.swing.*;
+import java.awt.*;
+import towerwarspp.preset.*;
+import towerwarspp.board.*;
+
+
+
+public class Test {
+	public static void main (String[] args) {
+		JFrame frame = new JFrame("Testklasse fuer Hexagon");
+
+
+		int hexaSize = 20;
+		int boardSize = 6;
+		BasicBoard board = new BasicBoard(boardSize);
+		
+		Token[][] tokens = board.getTokens();
+		
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		JPanel panel = new JPanel();
+		panel.setLayout(null);
+		
+		int rowPadding = 0;
+		for (int i = 0; i < board.getSize(); i++) {
+			for (int j = 0; j < board.getSize(); j++) {
+				HexagonButton hb = new HexagonButton(new Hexagon(hexaSize, hexaSize, hexaSize),tokens[i][j]);
+				hb.setBounds(i*2*hexaSize, j*2*hexaSize, 2*hexaSize, 2*hexaSize);
+				panel.add(hb);
+			}
+			rowPadding = i*hexaSize;
+		}
+		
+		frame.add(panel);
+		frame.setSize(400,400);
+		frame.setVisible(true);
+	}
+}

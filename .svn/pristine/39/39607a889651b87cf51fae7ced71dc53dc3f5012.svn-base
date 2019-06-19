@@ -1,0 +1,202 @@
+package towerwarspp.board;
+
+/** Klasse, die f&uuml;r TowerWarsPP ein Spielbrett-Objekt erzeugt und von BasicBoard.java erbt.
+ *	Dar&uuml;ber hinaus liefert diese Klasse Methoden, die alle m&ouml;glichen Spielz&uuml;ge ausgibt und diese anhand einer
+ *	simplen Strategie bewertet.
+ *
+ *	@author Julian L&uuml;ken
+ */
+import towerwarspp.preset.*;
+import java.util.LinkedList;
+public class ExtendedBoard extends BasicBoard {
+	/** Konstruktor, der die Spielfeldgr&ouml;&szlig; entgegennimmt und ein neues Spielbrett instanziert wie BasicBoard.java,
+	 *	@param size Gr&ouml;&szlig;e des Spielbretts
+	 */
+	public ExtendedBoard(int size) {
+		super(size);
+	}
+
+	/** Copy-Konstruktor
+	 *	@param extBoard zu kopierendes ExtendedBoard
+	 */
+	public ExtendedBoard(ExtendedBoard extBoard) {
+		super(extBoard.getSize());
+	}
+	
+	/** Parameterloser Default-Konstruktor */
+	/*
+	public ExtendedBoard() {
+		super(this);
+	}
+	*/
+
+	/** Methode, die alle m&ouml;glichen und erlaubten Spielz&uuml;ge eines Spielers als Liste ausgibt
+	 *	@param col Spielerfarbe
+	 *	@return Liste der Spielz&uuml;ge
+	 */
+	public LinkedList<Move> getLegalMoves(PlayerColor col) {
+		LinkedList<Move> moveList = new LinkedList<Move>();
+		LinkedList<Position> posList;
+		Token[][] tokens = getTokens();
+		Move move;
+		Token startToken;
+		for (int i = 0; i < getSize(); i++) {
+			for (int j = 0; j < getSize(); j++) {
+				startToken = tokens[i][j];
+				if (startToken != null && startToken.getType() != TokenType.BASE && startToken.getColor() == col ) {
+					posList = getNeighborhood(new Position(i+1, j+1), startToken.getRange());
+					for ( Position pos : posList ) {
+						move = new Move(new Position(i+1,j+1), pos);
+						if (isLegal(move)) {
+							moveList.add(move);
+						}
+					}
+				}
+			}
+		}
+		if (moveList.isEmpty()) {
+			moveList.add(null);
+		}
+		return moveList;
+	}
+	
+
+	/** Hilfsmethode, die die Nachbarschaft von einer Position ermittelt.
+	 *	@param pos Position
+	 *	@param range relative Reichweite der Nachbarschaft
+	 *	@return Liste der Positionen
+	 */
+	public LinkedList<Position> getNeighborhood(Position pos, int range) {
+		LinkedList<Position> list = new LinkedList<Position>();
+		int x = pos.getLetter();
+		int y = pos.getNumber();
+		int max, min;
+		// siehe RedBlobGames -> Hexagonal Grids
+		for (int i = -range; i <= range; i++) {
+			if ( -range > -i-range ) {
+				max = -range;
+			}
+			else {
+				max = -i-range;
+			}
+			if ( range < -i+range ) {
+				min = range;
+			}
+			else {
+				min = -i+range;
+			}
+			
+			for (int j = max; j <= min; j++) {
+				if (x+i > 0 && x+i <= getSize() && y+j > 0 && y+j <= getSize() && (i != 0 || j != 0)) {
+					list.add(new Position(x+i,y+j));
+				}
+			}
+		}
+		return list;
+	}
+
+	/** Methode f&uuml;r KI-Gegner, die einen Zug bewertet. Dabei wird bewertet, inwiefern der Zug daf&uuml;r sorgt, dass man einen gegnerischen Spielstein bezwingt
+	 *	oder sich in Richtung der gegnerischen Basis bewegt. Z&uuml;ge, die das Spiel gewinnen oder das Verlieren vermeiden, werden dabei bevorzugt
+	 *	@param move zu bewertender Spielzug
+	 *	@return Punktewertung f&uuml;r den Zug. Dabei steht 100 f&uuml;r einen rettenden Zug und 101 f&uuml;r einen gewinnenden Zug
+	 */
+	public int evaluateMove(Move move) {
+		// Leerer Zug
+		if (move == null) {
+			return -100;
+		}
+		
+		PlayerColor startColor	= findToken(move.getStart()).getColor();
+		PlayerColor opponentColor = PlayerColor.RED;
+		if (startColor == opponentColor) {
+			opponentColor = PlayerColor.BLUE;
+		}
+		// siegender Zug	
+		if (isWinning(move,opponentColor)) {
+			return 101;
+		}
+		// rettender Zug
+		if (isSaving(move,opponentColor)) {
+			return 100;
+		}
+		
+		// Punkte fuer das Bewegen in Richtung gegnerischer Basis
+		int rbase = 0; 
+		// Punkte fuer das Schlagen eines Spielsteins
+		int bkick = 0; 
+		
+		// in Richtung BLUE bewegen
+		if (startColor == PlayerColor.RED) {
+			rbase = getDistance(new Position(getSize(), getSize()),move.getStart()) - getDistance(new Position(getSize(), getSize()), move.getEnd());
+		}
+		
+		// in Richtung RED bewegen
+		else if (startColor == PlayerColor.BLUE) {
+			rbase = getDistance(new Position(1, 1),move.getStart()) - getDistance(new Position(1, 1), move.getEnd());
+		}
+
+		if (findToken(move.getEnd()) != null) {
+			PlayerColor endColor	= findToken(move.getEnd()).getColor();
+			TokenType 	type		= findToken(move.getEnd()).getType();
+			if (endColor != startColor) {
+				// Bauern schlagen
+
+				if (type == TokenType.PAWN) {			
+					bkick = 1;
+				}
+				// Turm schlagen
+				else if (type == TokenType.TOWER) {
+					bkick = 2;
+				}
+				// Basis schlagen
+				else if (type == TokenType.BASE) {
+					return 101;
+				}
+			}
+		}
+		return bkick + rbase;
+	}
+
+	/** Hilfsmethode f&uuml;r evaluateMove. Berechnet, ob der Zug gewinnen kann.
+	 *	@param move
+	 *	@param opponentColor gegnerische Farbe
+	 *	@return true, falls es so ist, sonst false.
+	 */
+	private boolean isWinning(Move move, PlayerColor opponentColor) {
+		LinkedList<Move> legalMoves = getLegalMoves(opponentColor);
+		if (legalMoves.size() > 1) {
+			return false;
+		}
+		else if (legalMoves.size() == 1) {
+			Move lastMove = legalMoves.getFirst();
+			if (move.getEnd() == lastMove.getEnd()) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/** Hilfsmethode f&uuml;r evaluateMove. Berechnet, ob der Zug eine Niederlage verhindern kann
+	 *	@return true, falls es so ist, sonst false.
+	 */
+	private boolean isSaving(Move move, PlayerColor opponentColor) {
+		LinkedList<Move> legalMoves = getLegalMoves(opponentColor);
+		boolean isRed = false;
+		if (opponentColor == PlayerColor.RED) {
+			isRed = true;
+		}
+		for (Move opponentMove : legalMoves) {
+			if ( !isRed && opponentMove.getEnd() == new Position(1,1)) {
+				if (move.getEnd() == opponentMove.getStart()) {
+					return 100;
+				}
+			}
+			else if ( isRed && opponentMove.getEnd() == new Position(getSize(), getSize())) {
+				if (move.getEnd() == opponentMove.getStart()) {
+					return 100;
+				}
+			}
+		}
+		return false;
+	}
+}

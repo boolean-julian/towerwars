@@ -1,0 +1,25 @@
+package towerwarspp.board;
+
+protected class Token {
+	// Instanzvariablen
+	private Cell cell;
+	private PlayerColor color;
+	private TokenType type;
+
+	// Konstruktoren
+	protected Token(Cell c, PlayerColor col, TokenType t) {
+		here = c;
+		color = col;
+		type = t;
+	}
+
+	// Getter/Setter
+	protected Cell getCell() {return here;}
+	protected PlayerColor getColor() {return color;}
+	protected int getType() {return type;}
+
+	protected void setCell(Cell c) {here = c;}
+	protected void setColor(PlayerColor col) {color = col;}
+	protected void setType(TokenType t) {type = t;}
+
+}

@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+
+<project name="OSKAR" default="archive" basedir=".">
+	<description>
+		Buildfile fuer das Allgemeine Programmierpraktikum - Projekt OSKAR vor!
+	</description>
+	
+	<property name="src" location="./src"/>
+	<property name="build" location="./build"/>
+	<property name="doc" location="./doc"/>
+
+	<target name="init">
+		<mkdir dir="${build}"/>
+		<mkdir dir="./log"/>
+	</target>
+
+	<target name="compile" depends="init" description="compile the source">
+		<javac srcdir="${src}" destdir="${build}" debug="true" includeantruntime="false" />
+	</target>
+
+	<target name="doc" depends="init,compile" description="generate documentation">
+		<mkdir dir ="${doc}"/>
+		<javadoc sourcepath="${src}" destdir="${doc}" access="private"/>
+	</target>
+
+	<target name="archive" depends="init,compile,doc" description="generate jar-File">
+		<jar destfile="TowerWars.jar" basedir="${build}">
+			<manifest>
+				<attribute name="Main-Class" value="towerwarspp.TowerWars"/>
+			</manifest>
+		</jar>
+	</target>
+</project>
+

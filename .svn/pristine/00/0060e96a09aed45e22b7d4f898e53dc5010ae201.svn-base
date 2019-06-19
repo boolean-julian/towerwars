@@ -1,0 +1,33 @@
+package towerwars.Spieler;
+
+import java.rmi.*;
+import java.rmi.server.UnicastRemoteObject;
+import java.net.*;
+
+import towerwarspp.preset.*;
+
+public class NetPlayer extends UnicastRemoteObject implements Player {
+	private Player player;
+	
+	//------------------------------------------------------
+	
+	public NetPlayer(Player player) throws RemoteException{
+		this.player = player;
+	}
+	
+	public Move request() throws Exception, RemoteException{
+		return player.request();
+	}
+	
+	public void update(Move opponentMove, Status boardStatus) throws Exception, RemoteException{
+		player.update(opponentMove, boardStatus);
+	}
+	
+	public void confirm(Status boardStatus) throws Exception, RemoteException{
+		player.confirm(boardStatus);
+	}
+	
+	public void init (int size, PlayerColor color) throws Exception, RemoteException{
+		player.init(size, color);
+	}
+}

@@ -1,0 +1,20 @@
+public class CPUSpieler extends Spieler{
+	private ExtendedBoard board; //ggf anpassen
+	@Override
+	private void getNextMove(){
+		
+	}	
+	
+	
+	
+	/**Überschreibt die geerbte Init
+	*/
+	@Override
+	void init(int size, PlayerColor color) throws Exception, RemoteException{
+		currentstatus = 0; 
+    	//initialisert eigenes Board und Spielerfarbe
+    	board = new ExtendedBoard(size);
+    	this.color = color;
+	}
+		
+}

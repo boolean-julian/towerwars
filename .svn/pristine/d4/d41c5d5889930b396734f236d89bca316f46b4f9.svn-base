@@ -1,0 +1,79 @@
+package towerwarspp.Spieler;
+
+import java.rmi.*;
+import java.rmi.server.UnicastRemoteObject;
+import java.net.*;
+
+import towerwarspp.board.*;
+import  towerwarspp.gfx.*;
+import towerwarspp.preset.*;
+
+/**
+Netzwerkspieler
+@author Oskar Wittkamp
+*/
+
+public class NetPlayer extends UnicastRemoteObject implements Player{
+	
+	public TowerWarsGUI gui;
+	private boolean isHost;
+	private BasicBoard board;
+
+	private Player player;
+	
+	//------------------------------------------------------
+	
+	public NetPlayer(Player player) throws RemoteException{
+		this.player = player;
+	}
+	
+	/**generiert einen nächsten Spielzug
+	Falls die GUI nicht von der eigenen Main verwaltet wird, synchronisiere die eigene GUI mit dem eigenen Board
+	@return nächster Spielzug
+	*/
+	@Override
+	public Move request() throws Exception, RemoteException{
+		Move m = player.request();
+		if(!isHost && board.isLegal(m)){
+			board.executeMove(m);
+			gui.update();	
+		}
+		return m;
+	}
+	
+	/**updatet das eigene Board, indem der gegnerische Zug ausgeführt wird
+	@param opponentMove gegnerischer neuer Zug
+	@param boardStatus Status des Host-Boards, nach dem gegnerischen Zug
+	*/
+	@Override
+	public void update(Move opponentMove, Status boardStatus) throws Exception, RemoteException{
+		player.update(opponentMove, boardStatus);
+		if(!isHost && board.isLegal(opponentMove)){
+			board.executeMove(opponentMove);
+			gui.update();
+		}
+	}
+	
+	/**prüft, ob der eigene Zug auf dem Server ausgeführt werden konnte
+	@param boardStatus Status des Server-Boards nach ausführen des eigenen Moves
+	*/
+	@Override
+	public void confirm(Status boardStatus) throws Exception, RemoteException{
+		player.confirm(boardStatus);
+	}
+	
+	/**initialisiert den NetPlayer
+	@param size Spielbrettgröße
+	@param color Spielerfarbe
+	*/
+	@Override
+	public void init (int size, PlayerColor color) throws Exception, RemoteException{
+		player.init(size, color);
+		board = new BasicBoard(size);
+		this.isHost = true;//isHost muss irgendwie übergeben werden
+		if(!isHost){
+			gui = new TowerWarsGUI(board);
+			gui.createAndShowGUI();
+		}
+	}
+}

@@ -1,0 +1,87 @@
+package towerwarspp.board;
+import towerwarspp.preset.Status;
+import towerwarspp.preset.Move;
+import towerwarspp.preset.PlayerColor;
+import towerwarspp.preset.Status;
+
+/**
+ * Diese Subklasse von Move stellt einen gespeicherten Zug in Towerwars dar, ein Objekt dieser Klasse
+ * werden von BasicBoard erzeugt, wenn ein Zug ausgefuehrt wird und wird zum rueckgaenigmachen dieses Zuges benoetigt
+ * @author Marcel Hellwig
+ */
+public class SavedMove extends Move {
+    // Instanzvariablen
+    /**
+     * startToken = Token, das sich zu Beginn des Zuges am Startfeld befindet
+     */
+    private Token startToken;
+    /**
+     * endToken = Token, das sich zu Beginn des Zuges am Zielfeld befindet
+     */
+    private Token endToken;
+    /**
+     * status = Status des Spielfeldes zu Beginn des Zuges
+     */
+    private Status status;
+	/**
+	 * currentPlayer = Spieler der zu beginn des Zuges an der Reihe ist
+	 */
+	private PlayerColor currentPlayer;
+
+    // Konstruktoren
+    /**
+     * Konstruktor mit uebergebenem Move
+     * @param move = Zug der gespeichert werden soll
+     */
+    protected SavedMove(Move move, BasicBoard board) {
+        super(move);
+        Token firstToken = board.findToken(move.getStart()), secondToken = board.findToken(move.getEnd());
+		switch(firstToken.getType()) {
+		    case PAWN:
+		        startToken = new Pawn((Pawn)firstToken);
+				break;
+		    case BASE:
+		        startToken = new Base((Base)firstToken);
+				break;
+		    default:
+		        startToken = new Tower((Tower)firstToken);
+        }
+		endToken = null;
+        if (secondToken != null) {
+			switch(secondToken.getType()) {
+				case PAWN:
+					endToken = new Pawn((Pawn)secondToken);
+					break;
+				case BASE:
+					endToken = new Base((Base)secondToken);
+					break;
+				default:
+					endToken = new Tower((Tower)secondToken);
+			}
+		}
+        status = board.getStatus();
+		currentPlayer = board.getCurrentPlayer();
+    }
+
+    // Getter
+    /**
+     * Getter fuer startToken
+     * @return Token welches sich zu Beginn des Zuges auf dem Startfeld befindet
+     */
+    protected Token getStartToken() {return startToken;}
+    /**
+     * Getter fuer endToken
+     * @return Token welches sich zu Beginn des Zuges auf dem Zielfeld befindet
+     */
+    protected Token getEndToken() {return endToken;}
+    /**
+     * Getter fuer status
+     * @return Status des Spielfeldes zu Beginn des Zuges
+     */
+    protected Status getStatus() {return status;}
+	/**
+	 * Getter fuer currentPlayer
+	 * @return Spieler der an der ist
+	 */
+	protected PlayerColor getCurrentPlayer() {return currentPlayer;}
+}

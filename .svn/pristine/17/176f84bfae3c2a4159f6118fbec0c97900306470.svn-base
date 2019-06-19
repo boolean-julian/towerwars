@@ -1,0 +1,107 @@
+package towerwarspp.board;
+
+/**
+ * Die Klasse Token stellt die Implementation einer Spielfigur aus Towerwars da
+ * Die Funktion der Spielfigur wird hierbei durch den TokenType und die PlayerColor bestimmt
+ */
+protected abstract class Token {
+	// Instanzvariablen
+    /**
+     * @param cell = Zelle in der sich das Token befindet
+     */
+	private Position position;
+    /**
+     * @param color = Die Farbe dieses Tokens
+     */
+	private PlayerColor color;
+    /**
+     * @param type = Der Typ dieses Tokens (Pawn, Base, Tower)
+     */
+	private TokenType type;
+	/**
+	 * @param range = Bewegungsreichweite dieses Tokens
+	 */
+	private int range;
+	/**
+	 * @param board = Board, auf dem sich dieses Token befindet
+	 */
+	private BasicBoard board;
+
+	// Konstruktoren
+    /**
+     * Konstruktor mit uebergebener Position, Farbe und und Typ
+     * @param position = Position an der sich dieses Token befindet
+     * @param color = Farbe dieses Tokens
+     * @param type = Typ dieses Token
+	 * @param board = Board auf dem sich dieses Token befindet
+     */
+	protected Token(Position position, PlayerColor color, TokenType type, BasicBoard board) {
+		this.position = position;
+		this.color = color;
+		this.type = type;
+		this.board = board;
+	}
+	/**
+	 * Parameterloser Defaultkonstruktor
+	 */
+	protected Token() {}
+
+	// Getter/Setter
+    /**
+     * Getter fuer position
+     * @return Position an der sich dieses Token befindet
+     */
+	protected Position getPosition() {return position;}
+    /**
+     * Getter fuer color
+     * @return Farbe dieses Tokens
+     */
+	protected PlayerColor getColor() {return color;}
+    /**
+     * Getter fuer type
+     * @return Typ dieses Tokens
+     */
+	protected TokenType getType() {return type;}
+	/**
+	 * Getter fuer range
+	 * @return Bewegungsreichweite dieses Token
+	 */
+	protected int getRange() {return range;}
+	/**
+	 * Getter fuer board
+	 * @return board auf dem sich dieses Token befindet
+	 */
+	protected BasicBoard getBoard() {return board;}
+    /**
+     * Setter fuer cell
+     * @param cell = Neue Zelle in der sich dieses Token befindet
+     */
+	protected void setPosition(Position position) {this.position = position;}
+    /**
+     * Setter fuer color
+     * @param color = Neue Farbe dieses Tokens
+     */
+	protected void setColor(PlayerColor color) {this.color = color;}
+    /**
+     * Setter fuer type
+     * @param type = Neuer Typ dieses Tokens
+     */
+	protected void setType(TokenType type) {this.type = type;}
+	/**
+	 * Setter fuer range
+	 * @param range = Neue Bewegungsreichweite dieses Token
+	 */
+	protected void setRange(int range) {this.range = range;}
+	/**
+	 * Setter fuer board
+	 * @param board = Neues Board auf dem sich dieses Token befindet
+	 */
+	protected void setBoard(BasicBoard board) {this.board = board;}
+
+    // Methoden
+    /**
+     * Diese Methode berechnet die Bewegungsreichweite dieses Tokens neu
+     */
+	protected abstract void updateRange() {}
+    
+}

@@ -1,0 +1,49 @@
+package towerwarspp.Spieler;
+import towerwarspp.preset.*;
+import java.util.LinkedList;
+import java.rmi.RemoteException;
+import towerwarspp.board.ExtendedBoard;
+import java.util.Random;
+
+/**
+CPU -Spieler mit der gegebenen einfachen KI
+*/
+
+public class CPUSpieler extends Spieler{
+	private Random random;
+	public CPUSpieler(){
+		super();
+		random = new Random();
+	}
+	
+	/**überschreibt die geerbte getNextMove Methode und ermittelt den nächsten Zug
+	@return bestmöglicher Spielzug nach Kriterien der gegebenen einfachen KI, bei mehreren gleichguten Zügen wird ein Zufälliger ausgewählt
+	*/
+	@Override
+	protected Move getNextMove(){
+		LinkedList<Move> list = board.getLegalMoves(color, true);
+		//Linked List zum speichern gleichguter moves, falls nötig
+		LinkedList<Move> bestmovelist = new LinkedList<>();
+		//Erster Move wird zum initialiseren als bester bisheriger Move angenommen
+		bestmovelist.add(list.get(0));
+		//initialisiert das Value vom ersten move als bisher angenommen bestes Value
+		int bestvalue = board.evaluateMove(list.get(0));
+		/*Iteriert über die Liste aller legalen Moves
+		Jeder Move wird ausgewertet, und derbeste/die besten Moves werden in bestmovelist gespeichert
+		*/
+		for (Move move : list){
+			//Wenn der Move genauso gut wie der bisher beste Move ist, wird er auch gespeichert
+			if(board.evaluateMove(move) == bestvalue)
+				bestmovelist.add(move);
+			//Wenn der Move der neue  beste Move ist, dann wird die bestmovelist geleert und der move reingespeichert
+			if (board.evaluateMove(move) > bestvalue){
+				bestmovelist.clear();
+				bestmovelist.add(move);
+				bestvalue = board.evaluateMove(bestmovelist.get(0));
+			}
+		}
+		//Gibt ein zufälliges Element der bestmovelist zurück
+		return bestmovelist.get(random.nextInt(bestmovelist.size()));
+	}	
+		
+}
